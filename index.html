@@ -395,6 +395,8 @@
         <div class="field"><label for="settingUnit">Branch / Office Name</label><input id="settingUnit" class="input" maxlength="100" placeholder="उदा. SBI Branch — Parli"></div>
         <div class="field"><label for="settingOfficer">Prepared By / Officer Name</label><input id="settingOfficer" class="input" maxlength="100" placeholder="उदा. Deepak Shengule"></div>
         <div class="field"><label for="settingDays">Attention After (Days)</label><input id="settingDays" class="input" type="number" min="1" max="90" required><div class="help">इतके दिवस स्टेज बदलला नाही तर फाईल “लक्ष द्या” मध्ये दिसेल.</div></div>
+        <div class="field"><label for="settingDbUrl">Realtime Database URL</label><input id="settingDbUrl" class="input" type="url" inputmode="url" maxlength="180" placeholder="https://...firebasedatabase.app"><div class="help">Firebase Console → Realtime Database → Data पेजवर वरती दिसणारा पूर्ण URL येथे Paste करा.</div></div>
+        <div id="cloudSetupStatus" class="transition-banner">Cloud Sync सुरू करण्यासाठी Database URL आवश्यक आहे.</div>
       </div>
       <div class="modal-foot"><button type="button" class="btn btn-outline" onclick="closeModal('settingsModal')">रद्द</button><button class="btn btn-primary" type="submit">Settings सेव्ह करा</button></div>
     </form>
@@ -411,16 +413,122 @@
     appId: "1:399887089364:web:27d18332d6aeca99c3c541"
   };
 
-  window.__DS_FIREBASE__ = { loading: true, ready: false, projectId: firebaseConfig.projectId };
-  import("https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js")
+  let firebaseApp = null;
+  let databaseTools = null;
+  let dashboardRef = null;
+  let stopDashboardListener = null;
+  let stopConnectionListener = null;
+  let activeDatabaseURL = "";
+  let firstSnapshot = true;
+  let canWrite = false;
+  let queuedPayload = null;
+  let writeInProgress = false;
+
+  const announce = (detail) => {
+    window.__DS_FIREBASE__ = { ...(window.__DS_FIREBASE__ || {}), ...detail, projectId: firebaseConfig.projectId };
+    window.dispatchEvent(new CustomEvent("ds-firebase-status", { detail: window.__DS_FIREBASE__ }));
+  };
+
+  const cleanDatabaseURL = (value) => String(value || "").trim().replace(/\/+$/, "");
+  const validDatabaseURL = (value) => /^https:\/\/[a-z0-9.-]+(?:firebaseio\.com|firebasedatabase\.app)$/i.test(cleanDatabaseURL(value));
+
+  const appPromise = import("https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js")
     .then(({ initializeApp, getApps, getApp }) => {
-      const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-      window.__DS_FIREBASE__ = { loading: false, ready: true, app, projectId: firebaseConfig.projectId };
-      window.dispatchEvent(new CustomEvent("ds-firebase-status", { detail: { ready: true, projectId: firebaseConfig.projectId } }));
+      firebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
+      announce({ loading: false, ready: true, cloud: false, app: firebaseApp });
+      return firebaseApp;
+    });
+
+  async function flushCloudSave() {
+    if (!canWrite || !dashboardRef || !databaseTools || !queuedPayload || writeInProgress) return;
+    const payload = queuedPayload;
+    queuedPayload = null;
+    writeInProgress = true;
+    try {
+      await databaseTools.set(dashboardRef, payload);
+      announce({ loading: false, ready: true, cloud: true, databaseURL: activeDatabaseURL, savedAt: Date.now(), error: null });
+    } catch (error) {
+      queuedPayload = payload;
+      announce({ loading: false, ready: true, cloud: false, databaseURL: activeDatabaseURL, error: error?.code || "database-write-failed" });
+    } finally {
+      writeInProgress = false;
+      if (queuedPayload && canWrite) setTimeout(flushCloudSave, 250);
+    }
+  }
+
+  async function connectRealtime(databaseURL) {
+    const url = cleanDatabaseURL(databaseURL);
+    if (!url) {
+      if (stopDashboardListener) stopDashboardListener();
+      if (stopConnectionListener) stopConnectionListener();
+      stopDashboardListener = null;
+      stopConnectionListener = null;
+      dashboardRef = null;
+      activeDatabaseURL = "";
+      firstSnapshot = true;
+      canWrite = false;
+      queuedPayload = null;
+      announce({ loading: false, ready: !!firebaseApp, cloud: false, connecting: false, databaseURL: "", error: null });
+      return false;
+    }
+    if (!validDatabaseURL(url)) {
+      announce({ loading: false, ready: !!firebaseApp, cloud: false, databaseURL: url, error: url ? "invalid-database-url" : null });
+      return false;
+    }
+    if (url === activeDatabaseURL && dashboardRef) return true;
+    announce({ loading: true, ready: !!firebaseApp, cloud: false, connecting: true, databaseURL: url, error: null });
+    try {
+      const app = await appPromise;
+      databaseTools = await import("https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js");
+      if (stopDashboardListener) stopDashboardListener();
+      if (stopConnectionListener) stopConnectionListener();
+      activeDatabaseURL = url;
+      firstSnapshot = true;
+      canWrite = false;
+      queuedPayload = null;
+      const database = databaseTools.getDatabase(app, url);
+      dashboardRef = databaseTools.ref(database, "fileFlow/dashboard");
+      stopConnectionListener = databaseTools.onValue(databaseTools.ref(database, ".info/connected"), (snapshot) => {
+        const connected = snapshot.val() === true;
+        announce({ loading: false, ready: true, cloud: connected, connecting: !connected, databaseURL: url, error: null });
+      });
+      stopDashboardListener = databaseTools.onValue(dashboardRef, (snapshot) => {
+        const remoteData = snapshot.val();
+        if (firstSnapshot) {
+          firstSnapshot = false;
+          if (remoteData) window.dispatchEvent(new CustomEvent("ds-cloud-data", { detail: remoteData }));
+          else window.dispatchEvent(new CustomEvent("ds-cloud-empty"));
+          canWrite = true;
+          flushCloudSave();
+          return;
+        }
+        if (remoteData) window.dispatchEvent(new CustomEvent("ds-cloud-data", { detail: remoteData }));
+      }, (error) => {
+        announce({ loading: false, ready: true, cloud: false, databaseURL: url, error: error?.code || "database-read-failed" });
+      });
+      return true;
+    } catch (error) {
+      announce({ loading: false, ready: !!firebaseApp, cloud: false, databaseURL: url, error: error?.code || "database-connect-failed" });
+      return false;
+    }
+  }
+
+  window.DSCloud = { connect: connectRealtime, isValidURL: validDatabaseURL };
+  window.addEventListener("ds-cloud-save", (event) => {
+    queuedPayload = event.detail;
+    flushCloudSave();
+  });
+
+  window.__DS_FIREBASE__ = { loading: true, ready: false, cloud: false, projectId: firebaseConfig.projectId };
+  appPromise
+    .then(() => {
+      let savedURL = "";
+      try { savedURL = JSON.parse(localStorage.getItem("ds.fileFlow.settings.v1") || "{}").databaseURL || ""; } catch (_) {}
+      if (savedURL) connectRealtime(savedURL);
+      else announce({ loading: false, ready: true, cloud: false, connecting: false, error: null });
     })
     .catch((error) => {
-      window.__DS_FIREBASE__ = { loading: false, ready: false, projectId: firebaseConfig.projectId, error: error?.code || "sdk-load-failed" };
-      window.dispatchEvent(new CustomEvent("ds-firebase-status", { detail: { ready: false, error: error?.code || "sdk-load-failed" } }));
+      announce({ loading: false, ready: false, cloud: false, error: error?.code || "sdk-load-failed" });
     });
 </script>
 
@@ -436,7 +544,7 @@
     REJECTED:{label:'REJECT', marathi:'नामंजूर', color:'#b33140'},
     DISBURSED:{label:'DISBURSED', marathi:'वितरित', color:'#08765d'}
   };
-  const defaultSettings = {unitName:'MY BRANCH / OFFICE', officerName:'', attentionDays:7};
+  const defaultSettings = {unitName:'MY BRANCH / OFFICE', officerName:'', attentionDays:7, databaseURL:''};
   let records = loadJSON(STORE_KEY, []);
   let settings = Object.assign({}, defaultSettings, loadJSON(SETTINGS_KEY, {}));
   let pendingTransition = null;
@@ -446,8 +554,15 @@
   function loadJSON(key, fallback){
     try{const parsed=JSON.parse(localStorage.getItem(key));return parsed ?? fallback}catch(e){return fallback}
   }
-  function persist(){
-    try{localStorage.setItem(STORE_KEY,JSON.stringify(records));localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings));return true}
+  function cloudPayload(){
+    return {version:1,updatedAt:Date.now(),records,settings:{unitName:settings.unitName,officerName:settings.officerName,attentionDays:settings.attentionDays}};
+  }
+  function persist(syncCloud=true){
+    try{
+      localStorage.setItem(STORE_KEY,JSON.stringify(records));localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings));
+      if(syncCloud&&settings.databaseURL&&typeof CustomEvent==='function')window.dispatchEvent(new CustomEvent('ds-cloud-save',{detail:cloudPayload()}));
+      return true;
+    }
     catch(e){toast('Storage भरले आहे. आधी Backup घ्या.');return false}
   }
   function uid(){return (crypto && crypto.randomUUID)?crypto.randomUUID():'f-'+Date.now()+'-'+Math.random().toString(16).slice(2)}
@@ -491,10 +606,13 @@
   }
   function renderAll(){renderHeader();renderDashboard();renderFiles();renderReports()}
   function updateFirebaseStatus(detail){
-    const badge=document.getElementById('firebaseStatus');const label=document.getElementById('firebaseStatusText');if(!badge||!label)return;
+    const badge=document.getElementById('firebaseStatus');const label=document.getElementById('firebaseStatusText');const setup=document.getElementById('cloudSetupStatus');if(!badge||!label)return;
     badge.classList.remove('ready','error');
-    if(detail?.ready){badge.classList.add('ready');label.textContent='FIREBASE READY';badge.title=`Firebase App connected • Project: ${detail.projectId} • Realtime Database URL अजून जोडायचा आहे`;}
-    else{badge.classList.add('error');label.textContent='LOCAL MODE';badge.title='Firebase SDK connect झाला नाही; Dashboard local mode मध्ये सुरू आहे';}
+    if(detail?.error){badge.classList.add('error');label.textContent='SYNC ERROR';badge.title=`Cloud Sync Error: ${detail.error}`;if(setup)setup.innerHTML='<strong>Cloud Sync Error:</strong> Database URL आणि Realtime Rules तपासा. Local copy सुरक्षित आहे.';}
+    else if(detail?.cloud){badge.classList.add('ready');label.textContent=detail.savedAt?'CLOUD SAVED':'LIVE SYNC';badge.title='Realtime Database शी Live Sync सुरू आहे';if(setup)setup.innerHTML='<strong>Live Cloud Sync सुरू आहे.</strong> नवीन नोंद व प्रत्येक stage update आपोआप Firebase मध्ये सेव्ह होईल.';}
+    else if(detail?.connecting){label.textContent='CONNECTING';badge.title='Realtime Database शी संपर्क करत आहे';if(setup)setup.innerHTML='<strong>Connecting...</strong> इंटरनेट आणि Database URL तपासत आहे.';}
+    else if(detail?.ready){label.textContent='URL REQUIRED';badge.title=`Firebase App तयार आहे • Project: ${detail.projectId} • Database URL आवश्यक`;if(setup)setup.innerHTML='<strong>Firebase App तयार आहे.</strong> Cloud Save साठी वरील Realtime Database URL टाका.';}
+    else{badge.classList.add('error');label.textContent='LOCAL MODE';badge.title='Firebase SDK connect झाला नाही; Dashboard local mode मध्ये सुरू आहे';if(setup)setup.innerHTML='<strong>Local Mode:</strong> इंटरनेट किंवा Firebase SDK उपलब्ध नाही.';}
   }
   function renderHeader(){
     document.getElementById('unitSubTitle').textContent=settings.unitName.toUpperCase();
@@ -607,8 +725,20 @@
   window.restoreFile=(id)=>{const r=getRecord(id);if(!r)return;r.archivedAt=null;r.updatedAt=nowISO();persist();renderAll();toast('फाईल Restore झाली.')};
   window.showAttentionFiles=()=>{switchTab('files');document.getElementById('statusFilter').value='ATTENTION';renderFiles()};
   window.clearFilters=()=>{document.getElementById('searchInput').value='';document.getElementById('statusFilter').value='ALL';document.getElementById('sortFilter').value='updatedDesc';renderFiles()};
-  window.openSettings=()=>{document.getElementById('settingUnit').value=settings.unitName;document.getElementById('settingOfficer').value=settings.officerName;document.getElementById('settingDays').value=settings.attentionDays;openModal('settingsModal')};
-  window.saveSettings=(event)=>{event.preventDefault();settings.unitName=document.getElementById('settingUnit').value.trim()||defaultSettings.unitName;settings.officerName=document.getElementById('settingOfficer').value.trim();settings.attentionDays=Math.min(90,Math.max(1,Number(document.getElementById('settingDays').value)||7));persist();closeModal('settingsModal');renderAll();toast('Settings सेव्ह झाले.')};
+  window.openSettings=()=>{
+    document.getElementById('settingUnit').value=settings.unitName;document.getElementById('settingOfficer').value=settings.officerName;document.getElementById('settingDays').value=settings.attentionDays;document.getElementById('settingDbUrl').value=settings.databaseURL||'';openModal('settingsModal');
+    if(window.__DS_FIREBASE__)updateFirebaseStatus(window.__DS_FIREBASE__);
+  };
+  window.saveSettings=(event)=>{
+    event.preventDefault();
+    const databaseURL=document.getElementById('settingDbUrl').value.trim().replace(/\/+$/,'');
+    const validURL=!databaseURL||/^https:\/\/[a-z0-9.-]+(?:firebaseio\.com|firebasedatabase\.app)$/i.test(databaseURL);
+    if(!validURL){toast('Realtime Database चा पूर्ण आणि अचूक URL टाका.');document.getElementById('settingDbUrl').focus();return}
+    settings.unitName=document.getElementById('settingUnit').value.trim()||defaultSettings.unitName;settings.officerName=document.getElementById('settingOfficer').value.trim();settings.attentionDays=Math.min(90,Math.max(1,Number(document.getElementById('settingDays').value)||7));settings.databaseURL=databaseURL;
+    persist(false);closeModal('settingsModal');renderAll();
+    if(window.DSCloud)window.DSCloud.connect(databaseURL);
+    toast(databaseURL?'Settings सेव्ह झाले; Cloud Sync जोडत आहे.':'Settings सेव्ह झाले; Local Mode सुरू आहे.');
+  };
   window.exportBackup=()=>{
     const payload={app:'DS File Flow Dashboard',version:1,exportedAt:nowISO(),settings,records};downloadBlob(JSON.stringify(payload,null,2),`DS_File_Backup_${dateStamp()}.json`,'application/json');toast('Backup download झाला.');
   };
@@ -646,12 +776,52 @@
     }).join('');
     document.getElementById('printArea').innerHTML=`<div class="print-head"><div><h1>${esc(settings.unitName)}</h1><p>DS FILE FLOW DASHBOARD • ${esc(title)}</p></div><div class="print-meta">Generated: ${formatDate(nowISO(),true)}<br>${settings.officerName?'Prepared By: '+esc(settings.officerName):''}</div></div><div class="print-summary">${[['TOTAL',all.length],...summary].map(x=>`<div class="print-stat"><strong>${x[1]}</strong><span>${x[0]}</span></div>`).join('')}</div><h2 class="print-title">${esc(title)} — ${items.length} File(s)</h2>${items.length?`<table class="print-table"><thead><tr><th>#</th><th>SR NO.</th><th>CUSTOMER NAME</th><th>STAGE</th><th>STAGE DATE</th><th>DAYS</th><th>LAST NOTE / HISTORY</th></tr></thead><tbody>${rows}</tbody></table>`:'<div class="print-empty">या रिपोर्टमध्ये कोणतीही फाईल नाही.</div>'}<div class="print-foot"><span>Computer-generated file position report.</span><span>Page report • ${esc(settings.unitName)}</span></div>`;
   }
+  function safeISO(value,fallback){
+    const time=Date.parse(value);return Number.isFinite(time)&&time<=Date.now()+86400000?new Date(time).toISOString():fallback;
+  }
+  function normalizeRemoteRecords(input){
+    const source=Array.isArray(input)?input:Object.values(input&&typeof input==='object'?input:{});
+    return source.filter(Boolean).slice(0,5000).map(raw=>{
+      if(!raw||typeof raw!=='object')return null;
+      const id=typeof raw.id==='string'?raw.id.slice(0,100):'';const srNo=typeof raw.srNo==='string'?raw.srNo.trim().slice(0,40):'';const customerName=typeof raw.customerName==='string'?raw.customerName.trim().slice(0,100):'';
+      if(!id||!srNo||!customerName||!stages[raw.status])return null;
+      const createdAt=safeISO(raw.createdAt,nowISO());const updatedAt=safeISO(raw.updatedAt,createdAt);const archivedAt=raw.archivedAt?safeISO(raw.archivedAt,null):null;
+      const rawHistory=Array.isArray(raw.history)?raw.history:Object.values(raw.history&&typeof raw.history==='object'?raw.history:{});
+      const history=rawHistory.filter(Boolean).slice(-200).map(item=>{
+        if(!item||typeof item!=='object'||!stages[item.to])return null;
+        return {from:stages[item.from]?item.from:null,to:item.to,at:safeISO(item.at,updatedAt),note:typeof item.note==='string'?item.note.slice(0,300):''};
+      }).filter(Boolean);
+      if(!history.length)history.push({from:null,to:raw.status,at:updatedAt,note:'Cloud record'});
+      return {id,srNo,customerName,status:raw.status,createdAt,updatedAt,archivedAt,history};
+    }).filter(Boolean);
+  }
+  function canonicalRecords(list){
+    return [...list].sort((a,b)=>String(a.id).localeCompare(String(b.id))).map(r=>({id:r.id,srNo:r.srNo,customerName:r.customerName,status:r.status,createdAt:r.createdAt,updatedAt:r.updatedAt,archivedAt:r.archivedAt||null,history:r.history||[]}));
+  }
+  function recordSignature(list){return JSON.stringify(canonicalRecords(list))}
+  function applyCloudData(payload){
+    if(!payload||typeof payload!=='object')return;
+    const remoteRecords=normalizeRemoteRecords(payload.records);const localBefore=recordSignature(records);const remoteSignature=recordSignature(remoteRecords);const merged=new Map();
+    remoteRecords.forEach(r=>merged.set(r.id,r));
+    records.forEach(r=>{const current=merged.get(r.id);if(!current||Date.parse(r.updatedAt||r.createdAt)>Date.parse(current.updatedAt||current.createdAt))merged.set(r.id,r)});
+    records=[...merged.values()];
+    const remoteSettings=payload.settings&&typeof payload.settings==='object'?payload.settings:{};const databaseURL=settings.databaseURL;
+    if(typeof remoteSettings.unitName==='string'&&remoteSettings.unitName.trim())settings.unitName=remoteSettings.unitName.trim().slice(0,100);
+    if(typeof remoteSettings.officerName==='string')settings.officerName=remoteSettings.officerName.trim().slice(0,100);
+    if(Number.isFinite(Number(remoteSettings.attentionDays)))settings.attentionDays=Math.min(90,Math.max(1,Number(remoteSettings.attentionDays)));
+    settings.databaseURL=databaseURL;
+    persist(false);renderAll();
+    const mergedSignature=recordSignature(records);if(mergedSignature!==localBefore)toast('Cloud मधील नवीन data Dashboard मध्ये आला.');
+    if(mergedSignature!==remoteSignature)setTimeout(()=>persist(true),100);
+  }
   function openModal(id){document.getElementById(id).classList.add('show');document.body.style.overflow='hidden'}
   window.closeModal=(id)=>{document.getElementById(id).classList.remove('show');if(!document.querySelector('.modal-backdrop.show'))document.body.style.overflow=''};
   window.backdropClose=(event,id)=>{if(event.target===event.currentTarget)closeModal(id)};
   function tickClock(){const d=new Date();document.getElementById('todayDate').textContent=new Intl.DateTimeFormat('mr-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(d);document.getElementById('todayTime').textContent=new Intl.DateTimeFormat('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(d)}
   document.addEventListener('keydown',e=>{if(e.key==='Escape'){document.querySelectorAll('.modal-backdrop.show').forEach(m=>closeModal(m.id))}});
   window.addEventListener('ds-firebase-status',e=>updateFirebaseStatus(e.detail));
+  window.addEventListener('ds-cloud-empty',()=>{if(settings.databaseURL)persist(true)});
+  window.addEventListener('ds-cloud-data',e=>applyCloudData(e.detail));
   window.addEventListener('storage',e=>{if([STORE_KEY,SETTINGS_KEY].includes(e.key)){records=loadJSON(STORE_KEY,[]);settings=Object.assign({},defaultSettings,loadJSON(SETTINGS_KEY,{}));renderAll()}});
   tickClock();setInterval(tickClock,1000);renderAll();if(window.__DS_FIREBASE__&&!window.__DS_FIREBASE__.loading)updateFirebaseStatus(window.__DS_FIREBASE__);
 })();
