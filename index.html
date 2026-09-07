@@ -1,0 +1,660 @@
+<!doctype html>
+<html lang="mr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#071e36">
+  <title>DS File Flow Dashboard</title>
+  <style>
+    :root{
+      --navy:#071e36;--navy2:#0b2e50;--blue:#1266a8;--cyan:#0e91a8;
+      --green:#087a62;--amber:#c98710;--red:#b83c49;--purple:#6950a1;
+      --bg:#f3f7fa;--card:#fff;--text:#172535;--muted:#687b8d;
+      --line:#d8e3eb;--soft:#edf4f8;--shadow:0 10px 30px rgba(8,35,61,.09);
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,"Noto Sans Devanagari","Segoe UI",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+    button,input,select,textarea{font:inherit}
+    button{cursor:pointer}
+    .app{min-height:100vh;padding-bottom:90px}
+    .topbar{position:sticky;top:0;z-index:30;background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;box-shadow:0 5px 20px rgba(2,22,40,.2)}
+    .topbar-inner{max-width:1380px;margin:auto;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:14px}
+    .brand{display:flex;align-items:center;gap:12px;min-width:0}
+    .brand-mark{width:45px;height:45px;border-radius:14px;background:linear-gradient(145deg,#2ec4b6,#1474ad);display:grid;place-items:center;font-weight:900;box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)}
+    .brand h1{font-size:18px;line-height:1.1;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .brand p{font-size:11px;margin:4px 0 0;color:#bcd3e4;letter-spacing:.08em}
+    .top-actions{display:flex;gap:8px;align-items:center}
+    .firebase-pill{height:42px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.09);border-radius:12px;padding:0 11px;display:flex;align-items:center;gap:7px;color:#d7e7f2;font-size:10px;font-weight:900;letter-spacing:.04em;white-space:nowrap}
+    .firebase-dot{width:8px;height:8px;border-radius:50%;background:#efb13b;box-shadow:0 0 0 4px rgba(239,177,59,.14)}
+    .firebase-pill.ready .firebase-dot{background:#35d1a8;box-shadow:0 0 0 4px rgba(53,209,168,.14)}
+    .firebase-pill.error .firebase-dot{background:#f06b78;box-shadow:0 0 0 4px rgba(240,107,120,.14)}
+    .btn{border:0;border-radius:12px;padding:11px 14px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:.18s;min-height:42px}
+    .btn:hover{transform:translateY(-1px)}
+    .btn:active{transform:translateY(0)}
+    .btn-primary{background:linear-gradient(135deg,#18a38f,#087a62);color:#fff;box-shadow:0 7px 17px rgba(8,122,98,.24)}
+    .btn-gold{background:linear-gradient(135deg,#e5aa34,#bd7a07);color:#fff}
+    .btn-light{background:#fff;color:var(--navy)}
+    .btn-soft{background:var(--soft);color:var(--navy)}
+    .btn-outline{background:#fff;color:var(--navy);border:1px solid var(--line)}
+    .btn-danger{background:#fff0f1;color:var(--red);border:1px solid #f2cbd0}
+    .btn-sm{padding:8px 10px;min-height:34px;border-radius:10px;font-size:12px}
+    .icon-btn{width:42px;height:42px;padding:0;border-radius:12px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;display:grid;place-items:center}
+    .svg{width:19px;height:19px;display:block;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+    .container{max-width:1380px;margin:0 auto;padding:22px 18px}
+    .hero{background:linear-gradient(125deg,#0b3155,#0d5e78);border-radius:24px;padding:22px;color:#fff;box-shadow:var(--shadow);display:flex;justify-content:space-between;gap:20px;align-items:center;overflow:hidden;position:relative}
+    .hero:after{content:"";position:absolute;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(74,219,197,.2),transparent 68%);right:-45px;top:-100px}
+    .hero-copy{position:relative;z-index:1}
+    .eyebrow{font-size:11px;letter-spacing:.14em;font-weight:900;color:#83e6d7;margin-bottom:7px}
+    .hero h2{font-size:25px;margin:0 0 7px;line-height:1.25}
+    .hero p{margin:0;color:#c9dce9;font-size:13px;line-height:1.55}
+    .hero-date{position:relative;z-index:1;text-align:right;flex:0 0 auto}
+    .hero-date strong{display:block;font-size:19px}
+    .hero-date span{font-size:12px;color:#c9dce9}
+    .tabs{display:flex;gap:8px;margin:18px 0;overflow:auto;padding:2px 1px;scrollbar-width:none}
+    .tabs::-webkit-scrollbar{display:none}
+    .tab{white-space:nowrap;border:1px solid var(--line);background:#fff;color:#526779;border-radius:999px;padding:10px 16px;font-weight:800}
+    .tab.active{background:var(--navy);color:#fff;border-color:var(--navy);box-shadow:0 6px 15px rgba(7,30,54,.16)}
+    .page{display:none}.page.active{display:block}
+    .stats-grid{display:grid;grid-template-columns:repeat(6,minmax(130px,1fr));gap:12px}
+    .stat{background:var(--card);border:1px solid #e4ecf2;border-radius:18px;padding:16px;box-shadow:0 5px 18px rgba(12,42,67,.05);position:relative;overflow:hidden}
+    .stat:after{content:"";position:absolute;height:4px;left:0;right:0;bottom:0;background:var(--accent,#7790a4)}
+    .stat-top{display:flex;justify-content:space-between;gap:8px;align-items:center}
+    .stat-label{font-size:11px;font-weight:900;letter-spacing:.04em;color:var(--muted)}
+    .stat-dot{width:10px;height:10px;border-radius:50%;background:var(--accent,#7790a4);box-shadow:0 0 0 5px color-mix(in srgb,var(--accent,#7790a4) 13%,transparent)}
+    .stat-value{font-size:31px;line-height:1;margin:14px 0 7px;font-weight:900;color:var(--navy)}
+    .stat-note{font-size:11px;color:var(--muted)}
+    .grid-2{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(300px,.85fr);gap:15px;margin-top:15px}
+    .card{background:var(--card);border:1px solid #e1eaf0;border-radius:var(--radius);box-shadow:0 5px 18px rgba(12,42,67,.05);overflow:hidden}
+    .card-head{padding:17px 18px;border-bottom:1px solid #e8eef3;display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .card-head h3{margin:0;font-size:15px;color:var(--navy)}
+    .card-head p{margin:4px 0 0;font-size:11px;color:var(--muted)}
+    .card-body{padding:18px}
+    .pipeline{display:grid;gap:15px}
+    .pipe-row{display:grid;grid-template-columns:112px 1fr 42px;gap:12px;align-items:center}
+    .pipe-label{font-size:12px;font-weight:900;color:#405568}
+    .pipe-track{height:12px;background:#eaf0f4;border-radius:999px;overflow:hidden}
+    .pipe-fill{height:100%;border-radius:999px;min-width:0;transition:width .4s ease;background:var(--fill,#718aa0)}
+    .pipe-count{text-align:right;font-weight:900;color:var(--navy)}
+    .metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+    .metric{background:var(--soft);border-radius:15px;padding:14px}
+    .metric strong{font-size:24px;color:var(--navy);display:block;margin-bottom:5px}
+    .metric span{font-size:11px;color:var(--muted);font-weight:700}
+    .section-space{margin-top:15px}
+    .attention-list,.activity-list{display:grid;gap:9px}
+    .empty{padding:24px 10px;text-align:center;color:var(--muted);font-size:13px}
+    .attention-item,.activity-item{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid #e3ebf1;border-radius:14px;padding:12px}
+    .attention-main,.activity-main{min-width:0}
+    .attention-main strong,.activity-main strong{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .attention-main span,.activity-main span{display:block;margin-top:4px;font-size:11px;color:var(--muted)}
+    .age-badge{flex:0 0 auto;border-radius:999px;padding:6px 9px;font-size:11px;font-weight:900;background:#fff3e0;color:#a85e00}
+    .activity-time{flex:0 0 auto;text-align:right;font-size:10px;color:var(--muted)}
+    .toolbar{background:#fff;border:1px solid #e1eaf0;border-radius:18px;padding:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;box-shadow:0 5px 18px rgba(12,42,67,.04)}
+    .search-wrap{position:relative;flex:1;min-width:230px}
+    .search-wrap .svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#7890a2}
+    .input,.select,.textarea{width:100%;border:1px solid #cfdce5;background:#fff;color:var(--text);border-radius:12px;padding:11px 12px;outline:none;transition:.15s}
+    .search-wrap .input{padding-left:41px}
+    .input:focus,.select:focus,.textarea:focus{border-color:#2c91b0;box-shadow:0 0 0 3px rgba(44,145,176,.12)}
+    .select{width:auto;min-width:150px;font-weight:700}
+    .table-card{margin-top:12px;background:#fff;border:1px solid #e1eaf0;border-radius:18px;overflow:hidden;box-shadow:0 5px 18px rgba(12,42,67,.04)}
+    .table-meta{padding:13px 16px;border-bottom:1px solid #e5edf2;font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:10px;align-items:center}
+    .table-wrap{overflow:auto}
+    table{width:100%;border-collapse:collapse;min-width:900px}
+    th{background:#f6f9fb;color:#607487;font-size:10px;letter-spacing:.06em;text-align:left;padding:12px;border-bottom:1px solid #dfe8ee;white-space:nowrap}
+    td{padding:13px 12px;border-bottom:1px solid #edf2f5;font-size:12px;vertical-align:middle}
+    tbody tr:hover{background:#fbfdfe}
+    .sr{font-weight:900;color:var(--blue)}
+    .customer{font-weight:800;color:var(--navy);max-width:230px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .status{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 9px;font-size:10px;font-weight:900;white-space:nowrap;background:var(--status-bg);color:var(--status-color)}
+    .status:before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+    .status-BRANCH{--status-bg:#e9f1f8;--status-color:#336c99}
+    .status-AMCC{--status-bg:#f0ebff;--status-color:#6950a1}
+    .status-SANCTIONED{--status-bg:#fff2d7;--status-color:#a66b00}
+    .status-REJECTED{--status-bg:#ffebed;--status-color:#b33140}
+    .status-DISBURSED{--status-bg:#e4f7f0;--status-color:#08765d}
+    .actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+    .action-stage{border:0;border-radius:9px;padding:7px 9px;font-size:10px;font-weight:900;color:#fff;background:var(--action,#1266a8);white-space:nowrap}
+    .more-btn{width:31px;height:31px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--navy);font-weight:900}
+    .mobile-file-list{display:none;padding:10px}
+    .file-card{border:1px solid #dfe8ee;border-radius:16px;padding:14px;margin-bottom:10px;background:#fff}
+    .file-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+    .file-name{font-size:15px;font-weight:900;color:var(--navy);margin-bottom:5px}
+    .file-sr{font-size:11px;color:var(--muted)}
+    .file-info{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:13px 0;background:#f6f9fb;border-radius:12px;padding:10px}
+    .file-info div{font-size:10px;color:var(--muted)}
+    .file-info strong{display:block;color:#344b5e;margin-top:3px;font-size:11px}
+    .file-actions{display:flex;gap:7px;flex-wrap:wrap}
+    .report-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
+    .report-card{border:1px solid #dee8ef;border-radius:17px;padding:16px;background:#fff;display:flex;flex-direction:column;min-height:170px}
+    .report-icon{width:39px;height:39px;border-radius:12px;display:grid;place-items:center;background:#eaf4f7;color:var(--cyan);margin-bottom:12px}
+    .report-card h4{margin:0 0 6px;font-size:14px;color:var(--navy)}
+    .report-card p{margin:0 0 14px;color:var(--muted);font-size:11px;line-height:1.5;flex:1}
+    .backup-row{display:flex;gap:8px;flex-wrap:wrap}
+    .privacy-note{background:#fff8e8;border:1px solid #f1dfb4;color:#7c5a14;border-radius:14px;padding:13px;font-size:11px;line-height:1.55;margin-top:14px}
+    .archive-list{display:grid;gap:8px}
+    .archive-item{border:1px solid #e1e9ef;border-radius:12px;padding:11px;display:flex;justify-content:space-between;gap:10px;align-items:center}
+    .archive-item strong{font-size:12px}.archive-item span{font-size:10px;color:var(--muted);display:block;margin-top:3px}
+    .modal-backdrop{position:fixed;inset:0;background:rgba(3,18,31,.66);z-index:100;display:none;align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(3px)}
+    .modal-backdrop.show{display:flex}
+    .modal{background:#fff;width:min(520px,100%);max-height:92vh;overflow:auto;border-radius:22px;box-shadow:0 25px 70px rgba(0,0,0,.3)}
+    .modal-head{padding:18px 19px 14px;border-bottom:1px solid #e6edf2;display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+    .modal-head h3{margin:0;font-size:17px;color:var(--navy)}
+    .modal-head p{margin:5px 0 0;color:var(--muted);font-size:11px}
+    .close-btn{width:34px;height:34px;border:0;border-radius:10px;background:var(--soft);color:var(--navy);font-size:20px}
+    .modal-body{padding:18px 19px}
+    .field{margin-bottom:14px}
+    .field label{display:block;font-size:11px;font-weight:900;color:#4d6275;margin-bottom:7px}
+    .req{color:var(--red)}
+    .help{font-size:10px;color:var(--muted);margin-top:6px;line-height:1.45}
+    .modal-foot{padding:14px 19px 18px;display:flex;justify-content:flex-end;gap:8px;border-top:1px solid #e6edf2}
+    .transition-banner{border-radius:14px;padding:13px;background:linear-gradient(135deg,#e8f4f7,#edf2fa);font-size:12px;line-height:1.5;margin-bottom:14px}
+    .transition-banner strong{color:var(--navy)}
+    .timeline{position:relative;padding-left:24px;display:grid;gap:16px}
+    .timeline:before{content:"";position:absolute;left:8px;top:5px;bottom:5px;width:2px;background:#d7e3ea}
+    .timeline-item{position:relative}
+    .timeline-item:before{content:"";position:absolute;left:-21px;top:4px;width:10px;height:10px;border-radius:50%;background:var(--cyan);box-shadow:0 0 0 4px #e7f4f6}
+    .timeline-item strong{font-size:12px;color:var(--navy)}
+    .timeline-item p{font-size:10px;color:var(--muted);margin:4px 0 0;line-height:1.45}
+    .quick-menu{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .quick-menu .btn{font-size:11px}
+    .toast{position:fixed;left:50%;bottom:88px;transform:translate(-50%,20px);opacity:0;pointer-events:none;background:#071e36;color:#fff;padding:11px 15px;border-radius:12px;font-size:12px;font-weight:800;z-index:200;box-shadow:0 12px 35px rgba(0,0,0,.25);transition:.25s;max-width:calc(100% - 34px);text-align:center}
+    .toast.show{opacity:1;transform:translate(-50%,0)}
+    .bottom-add{display:none;position:fixed;right:18px;bottom:21px;z-index:50;width:58px;height:58px;border-radius:18px;border:0;background:linear-gradient(135deg,#18a38f,#087a62);color:#fff;font-size:30px;box-shadow:0 12px 28px rgba(8,122,98,.35)}
+    #printArea{display:none}
+    @media(max-width:1050px){.stats-grid{grid-template-columns:repeat(3,1fr)}.report-grid{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:760px){
+      .topbar-inner{padding:11px 13px}.brand-mark{width:40px;height:40px}.brand h1{font-size:15px}.brand p{font-size:9px}
+      .top-actions .desktop-label,.firebase-text{display:none}.top-actions .btn{width:42px;padding:0}.firebase-pill{width:42px;padding:0;justify-content:center}.container{padding:14px 11px}.hero{border-radius:18px;padding:17px}.hero h2{font-size:20px}.hero-date{display:none}
+      .stats-grid{grid-template-columns:repeat(2,1fr);gap:9px}.stat{padding:14px}.stat-value{font-size:27px}.grid-2{grid-template-columns:1fr}.report-grid{grid-template-columns:1fr}
+      .table-wrap{display:none}.mobile-file-list{display:block}.toolbar{align-items:stretch}.search-wrap{min-width:100%}.select{flex:1;min-width:130px}.bottom-add{display:block}
+      .pipe-row{grid-template-columns:90px 1fr 35px}.card-head{padding:15px}.card-body{padding:15px}.modal-backdrop{padding:10px;align-items:flex-end}.modal{border-radius:22px 22px 14px 14px;max-height:94vh}
+    }
+    @media(max-width:390px){.stats-grid{grid-template-columns:1fr 1fr}.stat-label{font-size:10px}.top-actions{gap:5px}.quick-menu{grid-template-columns:1fr}}
+    @media print{
+      @page{size:A4;margin:11mm}
+      body{background:#fff;color:#000;font-family:Arial,"Noto Sans Devanagari",sans-serif}
+      .app,.modal-backdrop,.toast,.bottom-add{display:none!important}
+      #printArea{display:block!important}
+      .print-head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #183b5b;padding-bottom:9px;margin-bottom:12px}
+      .print-head h1{font-size:20px;margin:0;color:#102e49}.print-head p{font-size:9px;margin:4px 0 0;color:#555}
+      .print-meta{text-align:right;font-size:9px;line-height:1.5}
+      .print-summary{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin:10px 0 12px}
+      .print-stat{border:1px solid #bfcbd3;border-radius:6px;padding:6px;text-align:center}
+      .print-stat strong{display:block;font-size:16px}.print-stat span{font-size:8px;color:#555}
+      .print-title{font-size:13px;margin:10px 0 6px;color:#102e49}
+      .print-table{width:100%;border-collapse:collapse;min-width:0}
+      .print-table th{background:#eaf0f4!important;color:#1b344b;font-size:8px;padding:6px;border:1px solid #bfcbd3;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      .print-table td{font-size:8px;padding:6px;border:1px solid #ccd5db;vertical-align:top}
+      .print-foot{margin-top:12px;border-top:1px solid #bbb;padding-top:6px;font-size:8px;color:#666;display:flex;justify-content:space-between}
+      .print-empty{padding:30px;text-align:center;border:1px solid #ccc;font-size:11px}
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="brand-mark">DS</div>
+        <div><h1>FILE FLOW DASHBOARD</h1><p id="unitSubTitle">BRANCH • AMCC • DISBURSEMENT</p></div>
+      </div>
+      <div class="top-actions">
+        <div id="firebaseStatus" class="firebase-pill" title="Firebase configuration जोडत आहे">
+          <span class="firebase-dot"></span><span id="firebaseStatusText" class="firebase-text">FIREBASE...</span>
+        </div>
+        <button class="icon-btn" type="button" onclick="openSettings()" aria-label="Settings" title="सेटिंग्स">
+          <svg class="svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21h-4v-.08A1.7 1.7 0 0 0 8.96 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3v-4h.08A1.7 1.7 0 0 0 4.6 8.96a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1.03-1.56V3h4v.08A1.7 1.7 0 0 0 15.04 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.16.61.7 1.03 1.33 1.03H21v4h-.08A1.7 1.7 0 0 0 19.4 15z"></path></svg>
+        </button>
+        <button class="btn btn-light" type="button" onclick="printReport('all')">
+          <svg class="svg" viewBox="0 0 24 24"><path d="M6 9V2h12v7"></path><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><path d="M6 14h12v8H6z"></path></svg>
+          <span class="desktop-label">PDF Report</span>
+        </button>
+        <button class="btn btn-primary" type="button" onclick="openAddModal()">
+          <svg class="svg" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg>
+          <span class="desktop-label">नवीन फाईल</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <div class="hero-copy">
+        <div class="eyebrow">LIVE FILE POSITION</div>
+        <h2 id="heroTitle">आज आपल्या फाईल्स कुठे आहेत?</h2>
+        <p>नाव आणि Register SR No. टाका; पुढील प्रत्येक हालचाल एका क्लिकमध्ये नोंदवा.</p>
+      </div>
+      <div class="hero-date"><strong id="todayDate">—</strong><span id="todayTime">—</span></div>
+    </section>
+
+    <nav class="tabs" aria-label="मुख्य विभाग">
+      <button class="tab active" data-tab="dashboard" onclick="switchTab('dashboard')">डॅशबोर्ड</button>
+      <button class="tab" data-tab="files" onclick="switchTab('files')">सर्व फाईल्स</button>
+      <button class="tab" data-tab="reports" onclick="switchTab('reports')">PDF रिपोर्ट व बॅकअप</button>
+    </nav>
+
+    <section id="page-dashboard" class="page active">
+      <div id="statsGrid" class="stats-grid"></div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-head"><div><h3>Stage-wise File Position</h3><p>सध्या प्रत्येक टप्प्यावर असलेल्या फाईल्स</p></div><button class="btn btn-sm btn-soft" onclick="switchTab('files')">यादी पहा</button></div>
+          <div class="card-body"><div id="pipeline" class="pipeline"></div></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><h3>Performance Snapshot</h3><p>एकूण नोंदींवर आधारित</p></div></div>
+          <div class="card-body"><div id="metrics" class="metrics"></div></div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-head"><div><h3>लक्ष देण्याच्या फाईल्स</h3><p id="attentionSub">जास्त दिवस हालचाल नसलेल्या फाईल्स</p></div><button class="btn btn-sm btn-soft" onclick="showAttentionFiles()">सर्व पहा</button></div>
+          <div class="card-body"><div id="attentionList" class="attention-list"></div></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><h3>अलीकडील हालचाली</h3><p>नवीनतम स्टेज बदल</p></div></div>
+          <div class="card-body"><div id="activityList" class="activity-list"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="page-files" class="page">
+      <div class="toolbar">
+        <div class="search-wrap">
+          <svg class="svg" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+          <input id="searchInput" class="input" type="search" placeholder="Customer Name किंवा SR No. शोधा" oninput="renderFiles()">
+        </div>
+        <select id="statusFilter" class="select" onchange="renderFiles()">
+          <option value="ALL">सर्व स्टेज</option>
+          <option value="PENDING">सर्व Pending</option>
+          <option value="BRANCH">BRANCH</option>
+          <option value="AMCC">AMCC</option>
+          <option value="SANCTIONED">SANCTION</option>
+          <option value="REJECTED">REJECT</option>
+          <option value="DISBURSED">DISBURSED</option>
+          <option value="ATTENTION">लक्ष देण्याच्या</option>
+        </select>
+        <select id="sortFilter" class="select" onchange="renderFiles()">
+          <option value="updatedDesc">नवीन हालचाल आधी</option>
+          <option value="ageDesc">जुनी Pending आधी</option>
+          <option value="srAsc">SR No. क्रमाने</option>
+          <option value="nameAsc">नाव क्रमाने</option>
+        </select>
+        <button class="btn btn-outline" onclick="clearFilters()">Filter Reset</button>
+      </div>
+      <div class="table-card">
+        <div class="table-meta"><span id="resultCount">0 फाईल्स</span><button class="btn btn-sm btn-outline" onclick="printReport('filtered')">ही यादी PDF</button></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>REGISTER SR NO.</th><th>CUSTOMER NAME</th><th>CURRENT STAGE</th><th>STAGE DATE</th><th>WAITING</th><th>ADDED ON</th><th>ACTION</th></tr></thead>
+            <tbody id="fileTableBody"></tbody>
+          </table>
+        </div>
+        <div id="mobileFileList" class="mobile-file-list"></div>
+      </div>
+    </section>
+
+    <section id="page-reports" class="page">
+      <div class="report-grid">
+        <article class="report-card"><div class="report-icon"><svg class="svg" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"></path><path d="M14 2v6h6M9 13h8M9 17h8"></path></svg></div><h4>Complete File Report</h4><p>सर्व Active फाईल्स, summary आणि stage-wise position.</p><button class="btn btn-primary" onclick="printReport('all')">PDF तयार करा</button></article>
+        <article class="report-card"><div class="report-icon"><svg class="svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></div><h4>Pending File Report</h4><p>Branch, AMCC आणि Sanction झाल्या पण Disbursement बाकी असलेल्या फाईल्स.</p><button class="btn btn-gold" onclick="printReport('pending')">Pending PDF</button></article>
+        <article class="report-card"><div class="report-icon"><svg class="svg" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"></path><path d="M21 12a9 9 0 1 1-5-8.3"></path></svg></div><h4>Sanction Report</h4><p>Sanction टप्प्यावर असलेल्या आणि Disbursement बाकी फाईल्स.</p><button class="btn btn-outline" onclick="printReport('sanctioned')">Sanction PDF</button></article>
+        <article class="report-card"><div class="report-icon"><svg class="svg" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"></path><circle cx="12" cy="12" r="9"></circle></svg></div><h4>Disbursement Report</h4><p>यशस्वीरीत्या Disbursed झालेल्या फाईल्सची यादी.</p><button class="btn btn-outline" onclick="printReport('disbursed')">Disbursed PDF</button></article>
+        <article class="report-card"><div class="report-icon"><svg class="svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="m9 9 6 6M15 9l-6 6"></path></svg></div><h4>Reject Report</h4><p>Reject झालेल्या फाईल्स आणि नोंदवलेले कारण/शेरा.</p><button class="btn btn-outline" onclick="printReport('rejected')">Reject PDF</button></article>
+        <article class="report-card"><div class="report-icon"><svg class="svg" viewBox="0 0 24 24"><path d="M4 4h16v16H4zM8 9h8M8 13h8M8 17h5"></path></svg></div><h4>Current Filter Report</h4><p>सर्व फाईल्स पेजवर निवडलेल्या filter प्रमाणे PDF.</p><button class="btn btn-outline" onclick="printReport('filtered')">Filtered PDF</button></article>
+      </div>
+      <div class="grid-2 section-space">
+        <div class="card">
+          <div class="card-head"><div><h3>Data Backup</h3><p>फोन बदलल्यास किंवा browser data clear झाल्यास उपयोगी</p></div></div>
+          <div class="card-body">
+            <div class="backup-row">
+              <button class="btn btn-primary" onclick="exportBackup()">JSON Backup Download</button>
+              <button class="btn btn-outline" onclick="document.getElementById('importInput').click()">Backup Import</button>
+              <input id="importInput" type="file" accept="application/json,.json" hidden onchange="importBackup(event)">
+              <button class="btn btn-outline" onclick="exportCSV()">Excel CSV Download</button>
+            </div>
+            <div class="privacy-note"><strong>महत्त्वाचे:</strong> माहिती याच browser/device मध्ये सेव्ह होते. दर आठवड्याला JSON Backup डाउनलोड करून सुरक्षित ठेवा. PDF बटणानंतर Print स्क्रीनमध्ये <strong>Save as PDF</strong> निवडा.</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><h3>Archived Files</h3><p>चुकून काढलेल्या नोंदी येथे restore करता येतात</p></div><span id="archiveCount" class="age-badge">0</span></div>
+          <div class="card-body"><div id="archiveList" class="archive-list"></div></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<button class="bottom-add" aria-label="नवीन फाईल" onclick="openAddModal()">+</button>
+<div id="toast" class="toast"></div>
+<div id="printArea"></div>
+
+<div id="addModal" class="modal-backdrop" onclick="backdropClose(event,'addModal')">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="addTitle">
+    <div class="modal-head"><div><h3 id="addTitle">नवीन फाईल नोंदवा</h3><p>फक्त दोन माहिती आवश्यक आहेत</p></div><button class="close-btn" onclick="closeModal('addModal')">×</button></div>
+    <form id="addForm" onsubmit="addFile(event)">
+      <div class="modal-body">
+        <div class="field"><label for="srNo">Register SR No. <span class="req">*</span></label><input id="srNo" class="input" autocomplete="off" maxlength="40" placeholder="उदा. 245/2026" required><div class="help">Register मध्ये लिहिलेला अचूक क्रमांक.</div></div>
+        <div class="field"><label for="customerName">Customer Name <span class="req">*</span></label><input id="customerName" class="input" autocomplete="off" maxlength="100" placeholder="ग्राहकाचे पूर्ण नाव" required></div>
+        <div class="transition-banner">फाईल सेव्ह झाल्यावर तिची सुरुवातीची स्थिती आपोआप <strong>BRANCH</strong> राहील आणि आजची तारीख-वेळ नोंदवली जाईल.</div>
+      </div>
+      <div class="modal-foot"><button type="button" class="btn btn-outline" onclick="closeModal('addModal')">रद्द</button><button class="btn btn-primary" type="submit">फाईल सेव्ह करा</button></div>
+    </form>
+  </div>
+</div>
+
+<div id="stageModal" class="modal-backdrop" onclick="backdropClose(event,'stageModal')">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-head"><div><h3>File Stage Update</h3><p id="stageFileInfo">—</p></div><button class="close-btn" onclick="closeModal('stageModal')">×</button></div>
+    <form onsubmit="confirmStageChange(event)">
+      <div class="modal-body">
+        <div id="transitionText" class="transition-banner"></div>
+        <div class="field"><label for="stageNote">शेरा / कारण <span id="noteRequirement" class="help"></span></label><textarea id="stageNote" class="textarea" rows="3" maxlength="300" placeholder="ऐच्छिक शेरा लिहा..."></textarea><div id="stageNoteHelp" class="help">उदा. Document pending, query, sanction condition इ.</div></div>
+      </div>
+      <div class="modal-foot"><button type="button" class="btn btn-outline" onclick="closeModal('stageModal')">रद्द</button><button id="stageConfirmBtn" class="btn btn-primary" type="submit">स्थिती अपडेट करा</button></div>
+    </form>
+  </div>
+</div>
+
+<div id="detailsModal" class="modal-backdrop" onclick="backdropClose(event,'detailsModal')">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-head"><div><h3 id="detailsTitle">File Details</h3><p id="detailsSub">—</p></div><button class="close-btn" onclick="closeModal('detailsModal')">×</button></div>
+    <div class="modal-body">
+      <div id="detailsStatus" class="transition-banner"></div>
+      <div id="historyTimeline" class="timeline"></div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-outline" onclick="editCurrentFile()">नाव/SR Edit</button><button class="btn btn-soft" onclick="printCurrentFile()">File PDF</button><button class="btn btn-danger" onclick="archiveCurrentFile()">Archive</button></div>
+  </div>
+</div>
+
+<div id="editModal" class="modal-backdrop" onclick="backdropClose(event,'editModal')">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-head"><div><h3>File Details Edit</h3><p>फक्त मूलभूत माहिती दुरुस्त करा</p></div><button class="close-btn" onclick="closeModal('editModal')">×</button></div>
+    <form onsubmit="saveEdit(event)">
+      <div class="modal-body">
+        <div class="field"><label for="editSrNo">Register SR No. <span class="req">*</span></label><input id="editSrNo" class="input" maxlength="40" required></div>
+        <div class="field"><label for="editName">Customer Name <span class="req">*</span></label><input id="editName" class="input" maxlength="100" required></div>
+      </div>
+      <div class="modal-foot"><button type="button" class="btn btn-outline" onclick="closeModal('editModal')">रद्द</button><button class="btn btn-primary" type="submit">बदल सेव्ह करा</button></div>
+    </form>
+  </div>
+</div>
+
+<div id="moreModal" class="modal-backdrop" onclick="backdropClose(event,'moreModal')">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-head"><div><h3>File Actions</h3><p id="moreFileInfo">—</p></div><button class="close-btn" onclick="closeModal('moreModal')">×</button></div>
+    <div class="modal-body"><div id="quickMenu" class="quick-menu"></div></div>
+  </div>
+</div>
+
+<div id="settingsModal" class="modal-backdrop" onclick="backdropClose(event,'settingsModal')">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-head"><div><h3>Dashboard Settings</h3><p>रिपोर्टवर दिसणारी माहिती</p></div><button class="close-btn" onclick="closeModal('settingsModal')">×</button></div>
+    <form onsubmit="saveSettings(event)">
+      <div class="modal-body">
+        <div class="field"><label for="settingUnit">Branch / Office Name</label><input id="settingUnit" class="input" maxlength="100" placeholder="उदा. SBI Branch — Parli"></div>
+        <div class="field"><label for="settingOfficer">Prepared By / Officer Name</label><input id="settingOfficer" class="input" maxlength="100" placeholder="उदा. Deepak Shengule"></div>
+        <div class="field"><label for="settingDays">Attention After (Days)</label><input id="settingDays" class="input" type="number" min="1" max="90" required><div class="help">इतके दिवस स्टेज बदलला नाही तर फाईल “लक्ष द्या” मध्ये दिसेल.</div></div>
+      </div>
+      <div class="modal-foot"><button type="button" class="btn btn-outline" onclick="closeModal('settingsModal')">रद्द</button><button class="btn btn-primary" type="submit">Settings सेव्ह करा</button></div>
+    </form>
+  </div>
+</div>
+
+<script type="module">
+  const firebaseConfig = {
+    apiKey: "AIzaSyAjAb4_5QYRc9h_gVHcW2C15nIZz779BEs",
+    authDomain: "kcc1-a5cac.firebaseapp.com",
+    projectId: "kcc1-a5cac",
+    storageBucket: "kcc1-a5cac.firebasestorage.app",
+    messagingSenderId: "399887089364",
+    appId: "1:399887089364:web:27d18332d6aeca99c3c541"
+  };
+
+  window.__DS_FIREBASE__ = { loading: true, ready: false, projectId: firebaseConfig.projectId };
+  import("https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js")
+    .then(({ initializeApp, getApps, getApp }) => {
+      const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+      window.__DS_FIREBASE__ = { loading: false, ready: true, app, projectId: firebaseConfig.projectId };
+      window.dispatchEvent(new CustomEvent("ds-firebase-status", { detail: { ready: true, projectId: firebaseConfig.projectId } }));
+    })
+    .catch((error) => {
+      window.__DS_FIREBASE__ = { loading: false, ready: false, projectId: firebaseConfig.projectId, error: error?.code || "sdk-load-failed" };
+      window.dispatchEvent(new CustomEvent("ds-firebase-status", { detail: { ready: false, error: error?.code || "sdk-load-failed" } }));
+    });
+</script>
+
+<script>
+(() => {
+  'use strict';
+  const STORE_KEY = 'ds.fileFlow.records.v1';
+  const SETTINGS_KEY = 'ds.fileFlow.settings.v1';
+  const stages = {
+    BRANCH:{label:'BRANCH', marathi:'शाखेत', color:'#336c99'},
+    AMCC:{label:'AMCC', marathi:'AMCC कडे', color:'#6950a1'},
+    SANCTIONED:{label:'SANCTION', marathi:'मंजूर', color:'#a66b00'},
+    REJECTED:{label:'REJECT', marathi:'नामंजूर', color:'#b33140'},
+    DISBURSED:{label:'DISBURSED', marathi:'वितरित', color:'#08765d'}
+  };
+  const defaultSettings = {unitName:'MY BRANCH / OFFICE', officerName:'', attentionDays:7};
+  let records = loadJSON(STORE_KEY, []);
+  let settings = Object.assign({}, defaultSettings, loadJSON(SETTINGS_KEY, {}));
+  let pendingTransition = null;
+  let selectedId = null;
+  let toastTimer = null;
+
+  function loadJSON(key, fallback){
+    try{const parsed=JSON.parse(localStorage.getItem(key));return parsed ?? fallback}catch(e){return fallback}
+  }
+  function persist(){
+    try{localStorage.setItem(STORE_KEY,JSON.stringify(records));localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings));return true}
+    catch(e){toast('Storage भरले आहे. आधी Backup घ्या.');return false}
+  }
+  function uid(){return (crypto && crypto.randomUUID)?crypto.randomUUID():'f-'+Date.now()+'-'+Math.random().toString(16).slice(2)}
+  function nowISO(){return new Date().toISOString()}
+  function esc(value){return String(value??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+  function normalizeSr(value){return String(value||'').trim().replace(/\s+/g,' ').toUpperCase()}
+  function activeRecords(){return records.filter(r=>!r.archivedAt)}
+  function archivedRecords(){return records.filter(r=>!!r.archivedAt)}
+  function getRecord(id){return records.find(r=>r.id===id)}
+  function stageSince(record){
+    const changes=(record.history||[]).filter(h=>h.to===record.status);
+    return changes.length?changes[changes.length-1].at:record.updatedAt||record.createdAt;
+  }
+  function startOfDay(d){const x=new Date(d);x.setHours(0,0,0,0);return x}
+  function daysSince(date){return Math.max(0,Math.floor((startOfDay(new Date())-startOfDay(new Date(date)))/86400000))}
+  function formatDate(iso,withTime=false){
+    if(!iso)return '—';
+    const opt=withTime?{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}:{day:'2-digit',month:'short',year:'numeric'};
+    return new Intl.DateTimeFormat('en-IN',opt).format(new Date(iso));
+  }
+  function isPending(record){return ['BRANCH','AMCC','SANCTIONED'].includes(record.status)}
+  function needsAttention(record){return isPending(record)&&daysSince(stageSince(record))>=Number(settings.attentionDays||7)}
+  function countBy(status){return activeRecords().filter(r=>r.status===status).length}
+  function toast(message){
+    const el=document.getElementById('toast');el.textContent=message;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2600);
+  }
+  function statusBadge(status){const s=stages[status]||stages.BRANCH;return `<span class="status status-${esc(status)}">${esc(s.label)}</span>`}
+  function nextActions(record){
+    const map={
+      BRANCH:[['AMCC','AMCC ला पाठवा','#6950a1']],
+      AMCC:[['SANCTIONED','Sanction','#a66b00'],['REJECTED','Reject','#b33140'],['BRANCH','Branch Return','#336c99']],
+      SANCTIONED:[['DISBURSED','Disburse','#08765d'],['AMCC','AMCC Return','#6950a1']],
+      REJECTED:[['BRANCH','Re-open','#336c99']],
+      DISBURSED:[['SANCTIONED','Correction','#a66b00']]
+    };
+    return map[record.status]||[];
+  }
+  function stageButtons(record,limit=false){
+    const arr=nextActions(record);const shown=limit?arr.slice(0,2):arr;
+    return shown.map(a=>`<button class="action-stage" style="--action:${a[2]}" onclick="openStageModal('${record.id}','${a[0]}')">${esc(a[1])}</button>`).join('');
+  }
+  function renderAll(){renderHeader();renderDashboard();renderFiles();renderReports()}
+  function updateFirebaseStatus(detail){
+    const badge=document.getElementById('firebaseStatus');const label=document.getElementById('firebaseStatusText');if(!badge||!label)return;
+    badge.classList.remove('ready','error');
+    if(detail?.ready){badge.classList.add('ready');label.textContent='FIREBASE READY';badge.title=`Firebase App connected • Project: ${detail.projectId} • Realtime Database URL अजून जोडायचा आहे`;}
+    else{badge.classList.add('error');label.textContent='LOCAL MODE';badge.title='Firebase SDK connect झाला नाही; Dashboard local mode मध्ये सुरू आहे';}
+  }
+  function renderHeader(){
+    document.getElementById('unitSubTitle').textContent=settings.unitName.toUpperCase();
+    document.getElementById('heroTitle').textContent=settings.unitName==='MY BRANCH / OFFICE'?'आज आपल्या फाईल्स कुठे आहेत?':settings.unitName+' — File Position';
+    document.getElementById('attentionSub').textContent=`${settings.attentionDays}+ दिवस हालचाल नसलेल्या Pending फाईल्स`;
+  }
+  function renderDashboard(){
+    const all=activeRecords();const counts={BRANCH:countBy('BRANCH'),AMCC:countBy('AMCC'),SANCTIONED:countBy('SANCTIONED'),REJECTED:countBy('REJECTED'),DISBURSED:countBy('DISBURSED')};
+    const statData=[
+      ['TOTAL FILES',all.length,'सर्व Active नोंदी','#173f62'],['BRANCH',counts.BRANCH,'शाखेत उपलब्ध','#336c99'],['AMCC',counts.AMCC,'प्रक्रियेत','#6950a1'],['SANCTION',counts.SANCTIONED,'Disbursement बाकी','#c98710'],['REJECT',counts.REJECTED,'नामंजूर','#b83c49'],['DISBURSED',counts.DISBURSED,'पूर्ण झालेल्या','#087a62']
+    ];
+    document.getElementById('statsGrid').innerHTML=statData.map(x=>`<article class="stat" style="--accent:${x[3]}"><div class="stat-top"><span class="stat-label">${x[0]}</span><span class="stat-dot"></span></div><div class="stat-value">${x[1]}</div><div class="stat-note">${x[2]}</div></article>`).join('');
+    const max=Math.max(1,...Object.values(counts));
+    document.getElementById('pipeline').innerHTML=Object.keys(stages).map(k=>`<div class="pipe-row"><div class="pipe-label">${stages[k].label}</div><div class="pipe-track"><div class="pipe-fill" style="--fill:${stages[k].color};width:${(counts[k]/max)*100}%"></div></div><div class="pipe-count">${counts[k]}</div></div>`).join('');
+    const decided=counts.SANCTIONED+counts.REJECTED+counts.DISBURSED;
+    const sanctionedEver=all.filter(r=>(r.history||[]).some(h=>h.to==='SANCTIONED'||h.to==='DISBURSED')).length;
+    const sanctionRate=decided?Math.round((sanctionedEver/(sanctionedEver+counts.REJECTED))*100):0;
+    const pending=all.filter(isPending).length;const attention=all.filter(needsAttention).length;
+    const avgPending=all.filter(isPending).length?Math.round(all.filter(isPending).reduce((s,r)=>s+daysSince(stageSince(r)),0)/all.filter(isPending).length):0;
+    document.getElementById('metrics').innerHTML=`
+      <div class="metric"><strong>${pending}</strong><span>Total Pending</span></div>
+      <div class="metric"><strong>${attention}</strong><span>Need Attention</span></div>
+      <div class="metric"><strong>${sanctionRate}%</strong><span>Sanction Rate</span></div>
+      <div class="metric"><strong>${avgPending}</strong><span>Avg. Pending Days</span></div>`;
+    const attentionList=all.filter(needsAttention).sort((a,b)=>daysSince(stageSince(b))-daysSince(stageSince(a))).slice(0,6);
+    document.getElementById('attentionList').innerHTML=attentionList.length?attentionList.map(r=>`<div class="attention-item"><div class="attention-main"><strong>${esc(r.customerName)}</strong><span>SR ${esc(r.srNo)} • ${stages[r.status].label} • ${formatDate(stageSince(r))}</span></div><button class="age-badge" style="border:0" onclick="showDetails('${r.id}')">${daysSince(stageSince(r))} दिवस</button></div>`).join(''):`<div class="empty">सध्या लक्ष देण्यासारखी जुनी Pending फाईल नाही.</div>`;
+    const activities=[];
+    all.forEach(r=>(r.history||[]).forEach(h=>activities.push({record:r,...h})));
+    activities.sort((a,b)=>new Date(b.at)-new Date(a.at));
+    document.getElementById('activityList').innerHTML=activities.length?activities.slice(0,6).map(a=>`<div class="activity-item"><div class="activity-main"><strong>${esc(a.record.customerName)}</strong><span>SR ${esc(a.record.srNo)} • ${a.from?esc(stages[a.from]?.label||a.from)+' → ':''}${esc(stages[a.to]?.label||a.to)}</span></div><div class="activity-time">${formatDate(a.at,true)}</div></div>`).join(''):`<div class="empty">अजून कोणतीही हालचाल नोंदलेली नाही.</div>`;
+  }
+  function getFiltered(){
+    const q=document.getElementById('searchInput')?.value.trim().toLocaleLowerCase('en-IN')||'';
+    const filter=document.getElementById('statusFilter')?.value||'ALL';
+    const sort=document.getElementById('sortFilter')?.value||'updatedDesc';
+    let list=activeRecords().filter(r=>!q||r.customerName.toLocaleLowerCase('en-IN').includes(q)||r.srNo.toLocaleLowerCase('en-IN').includes(q));
+    if(filter==='PENDING')list=list.filter(isPending);else if(filter==='ATTENTION')list=list.filter(needsAttention);else if(filter!=='ALL')list=list.filter(r=>r.status===filter);
+    list.sort((a,b)=>{
+      if(sort==='ageDesc')return daysSince(stageSince(b))-daysSince(stageSince(a));
+      if(sort==='srAsc')return a.srNo.localeCompare(b.srNo,undefined,{numeric:true,sensitivity:'base'});
+      if(sort==='nameAsc')return a.customerName.localeCompare(b.customerName,'mr',{sensitivity:'base'});
+      return new Date(b.updatedAt)-new Date(a.updatedAt);
+    });
+    return list;
+  }
+  function renderFiles(){
+    const list=getFiltered();document.getElementById('resultCount').textContent=`${list.length} फाईल${list.length===1?'':'्स'}`;
+    const body=document.getElementById('fileTableBody');const mobile=document.getElementById('mobileFileList');
+    if(!list.length){body.innerHTML='<tr><td colspan="7"><div class="empty">या filter मध्ये कोणतीही फाईल नाही.</div></td></tr>';mobile.innerHTML='<div class="empty">या filter मध्ये कोणतीही फाईल नाही.</div>';return}
+    body.innerHTML=list.map(r=>{
+      const age=daysSince(stageSince(r));return `<tr><td class="sr">${esc(r.srNo)}</td><td><div class="customer" title="${esc(r.customerName)}">${esc(r.customerName)}</div></td><td>${statusBadge(r.status)}</td><td>${formatDate(stageSince(r),true)}</td><td><span class="age-badge">${age} दिवस</span></td><td>${formatDate(r.createdAt)}</td><td><div class="actions">${stageButtons(r,true)}<button class="more-btn" onclick="openMore('${r.id}')">•••</button></div></td></tr>`
+    }).join('');
+    mobile.innerHTML=list.map(r=>{const age=daysSince(stageSince(r));return `<article class="file-card"><div class="file-top"><div><div class="file-name">${esc(r.customerName)}</div><div class="file-sr">Register SR No. <strong>${esc(r.srNo)}</strong></div></div>${statusBadge(r.status)}</div><div class="file-info"><div>STAGE DATE<strong>${formatDate(stageSince(r),true)}</strong></div><div>WAITING<strong>${age} दिवस</strong></div></div><div class="file-actions">${stageButtons(r,true)}<button class="btn btn-sm btn-outline" onclick="openMore('${r.id}')">More</button></div></article>`}).join('');
+  }
+  window.renderFiles=renderFiles;
+  function renderReports(){
+    const archived=archivedRecords();document.getElementById('archiveCount').textContent=archived.length;
+    document.getElementById('archiveList').innerHTML=archived.length?archived.sort((a,b)=>new Date(b.archivedAt)-new Date(a.archivedAt)).map(r=>`<div class="archive-item"><div><strong>${esc(r.customerName)} • SR ${esc(r.srNo)}</strong><span>Archived: ${formatDate(r.archivedAt,true)}</span></div><button class="btn btn-sm btn-soft" onclick="restoreFile('${r.id}')">Restore</button></div>`).join(''):'<div class="empty">Archived नोंदी नाहीत.</div>';
+  }
+  window.switchTab=(name)=>{
+    document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id===`page-${name}`));
+    document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===name));
+    if(name==='files')renderFiles();if(name==='reports')renderReports();window.scrollTo({top:0,behavior:'smooth'});
+  };
+  window.openAddModal=()=>{document.getElementById('addForm').reset();openModal('addModal');setTimeout(()=>document.getElementById('srNo').focus(),100)};
+  window.addFile=(event)=>{
+    event.preventDefault();const srNo=normalizeSr(document.getElementById('srNo').value);const name=document.getElementById('customerName').value.trim().replace(/\s+/g,' ');
+    if(!srNo||!name)return;
+    if(records.some(r=>!r.archivedAt&&normalizeSr(r.srNo)===srNo)){toast('हा Register SR No. आधीच नोंदलेला आहे.');document.getElementById('srNo').focus();return}
+    const at=nowISO();records.push({id:uid(),srNo,customerName:name,status:'BRANCH',createdAt:at,updatedAt:at,archivedAt:null,history:[{from:null,to:'BRANCH',at,note:'New file registered'}]});
+    persist();closeModal('addModal');renderAll();toast('फाईल BRANCH स्टेजमध्ये नोंदली.');
+  };
+  window.openStageModal=(id,target)=>{
+    const r=getRecord(id);if(!r||!stages[target])return;pendingTransition={id,target};
+    document.getElementById('stageFileInfo').textContent=`${r.customerName} • SR ${r.srNo}`;
+    document.getElementById('transitionText').innerHTML=`<strong>${stages[r.status].label}</strong> मधून <strong>${stages[target].label}</strong> मध्ये स्थिती बदलत आहात.`;
+    const required=target==='REJECTED';document.getElementById('stageNote').value='';document.getElementById('stageNote').required=required;
+    document.getElementById('noteRequirement').textContent=required?'(Reject साठी आवश्यक)':'(ऐच्छिक)';
+    document.getElementById('stageNoteHelp').textContent=required?'Reject चे कारण लिहिणे आवश्यक आहे.':'उदा. Document pending, query, sanction condition इ.';
+    document.getElementById('stageConfirmBtn').className='btn '+(target==='REJECTED'?'btn-danger':'btn-primary');openModal('stageModal');
+  };
+  window.confirmStageChange=(event)=>{
+    event.preventDefault();if(!pendingTransition)return;const r=getRecord(pendingTransition.id);if(!r)return;
+    const note=document.getElementById('stageNote').value.trim();if(pendingTransition.target==='REJECTED'&&!note){toast('Reject चे कारण लिहा.');return}
+    const at=nowISO(),from=r.status;r.status=pendingTransition.target;r.updatedAt=at;r.history=r.history||[];r.history.push({from,to:r.status,at,note});
+    persist();closeModal('stageModal');pendingTransition=null;renderAll();toast(`स्थिती ${stages[r.status].label} केली.`);
+  };
+  window.openMore=(id)=>{
+    const r=getRecord(id);if(!r)return;selectedId=id;document.getElementById('moreFileInfo').textContent=`${r.customerName} • SR ${r.srNo}`;
+    const actionHtml=nextActions(r).map(a=>`<button class="btn" style="background:${a[2]};color:#fff" onclick="closeModal('moreModal');openStageModal('${r.id}','${a[0]}')">${esc(a[1])}</button>`).join('');
+    document.getElementById('quickMenu').innerHTML=actionHtml+`<button class="btn btn-soft" onclick="closeModal('moreModal');showDetails('${r.id}')">इतिहास / Details</button><button class="btn btn-outline" onclick="closeModal('moreModal');editFile('${r.id}')">Name / SR Edit</button>`;
+    openModal('moreModal');
+  };
+  window.showDetails=(id)=>{
+    const r=getRecord(id);if(!r)return;selectedId=id;document.getElementById('detailsTitle').textContent=r.customerName;document.getElementById('detailsSub').textContent=`Register SR No. ${r.srNo}`;
+    document.getElementById('detailsStatus').innerHTML=`Current Stage: <strong>${stages[r.status].label}</strong> • Since ${formatDate(stageSince(r),true)} • ${daysSince(stageSince(r))} दिवस`;
+    const history=[...(r.history||[])].reverse();document.getElementById('historyTimeline').innerHTML=history.map(h=>`<div class="timeline-item"><strong>${h.from?esc(stages[h.from]?.label||h.from)+' → ':''}${esc(stages[h.to]?.label||h.to)}</strong><p>${formatDate(h.at,true)}${h.note?' • '+esc(h.note):''}</p></div>`).join('');openModal('detailsModal');
+  };
+  window.editCurrentFile=()=>{const id=selectedId;closeModal('detailsModal');editFile(id)};
+  window.editFile=(id)=>{const r=getRecord(id);if(!r)return;selectedId=id;document.getElementById('editSrNo').value=r.srNo;document.getElementById('editName').value=r.customerName;openModal('editModal')};
+  window.saveEdit=(event)=>{
+    event.preventDefault();const r=getRecord(selectedId);if(!r)return;const sr=normalizeSr(document.getElementById('editSrNo').value),name=document.getElementById('editName').value.trim().replace(/\s+/g,' ');
+    if(records.some(x=>x.id!==r.id&&!x.archivedAt&&normalizeSr(x.srNo)===sr)){toast('हा Register SR No. दुसऱ्या फाईलमध्ये आहे.');return}
+    r.srNo=sr;r.customerName=name;r.updatedAt=nowISO();persist();closeModal('editModal');renderAll();toast('File details अपडेट झाले.');
+  };
+  window.archiveCurrentFile=()=>{
+    const r=getRecord(selectedId);if(!r)return;if(!confirm(`${r.customerName} ही फाईल Archive करायची? ती नंतर Restore करता येईल.`))return;
+    r.archivedAt=nowISO();r.updatedAt=r.archivedAt;persist();closeModal('detailsModal');renderAll();toast('फाईल Archive केली.');
+  };
+  window.restoreFile=(id)=>{const r=getRecord(id);if(!r)return;r.archivedAt=null;r.updatedAt=nowISO();persist();renderAll();toast('फाईल Restore झाली.')};
+  window.showAttentionFiles=()=>{switchTab('files');document.getElementById('statusFilter').value='ATTENTION';renderFiles()};
+  window.clearFilters=()=>{document.getElementById('searchInput').value='';document.getElementById('statusFilter').value='ALL';document.getElementById('sortFilter').value='updatedDesc';renderFiles()};
+  window.openSettings=()=>{document.getElementById('settingUnit').value=settings.unitName;document.getElementById('settingOfficer').value=settings.officerName;document.getElementById('settingDays').value=settings.attentionDays;openModal('settingsModal')};
+  window.saveSettings=(event)=>{event.preventDefault();settings.unitName=document.getElementById('settingUnit').value.trim()||defaultSettings.unitName;settings.officerName=document.getElementById('settingOfficer').value.trim();settings.attentionDays=Math.min(90,Math.max(1,Number(document.getElementById('settingDays').value)||7));persist();closeModal('settingsModal');renderAll();toast('Settings सेव्ह झाले.')};
+  window.exportBackup=()=>{
+    const payload={app:'DS File Flow Dashboard',version:1,exportedAt:nowISO(),settings,records};downloadBlob(JSON.stringify(payload,null,2),`DS_File_Backup_${dateStamp()}.json`,'application/json');toast('Backup download झाला.');
+  };
+  window.importBackup=(event)=>{
+    const file=event.target.files?.[0];event.target.value='';if(!file)return;const reader=new FileReader();reader.onload=()=>{
+      try{const data=JSON.parse(reader.result);if(!Array.isArray(data.records))throw new Error('invalid');if(!confirm(`Backup मध्ये ${data.records.length} नोंदी आहेत. सध्याचा data बदलून हा Backup Import करायचा?`))return;records=data.records;settings=Object.assign({},defaultSettings,data.settings||{});persist();renderAll();toast('Backup यशस्वीरीत्या Import झाला.')}catch(e){toast('ही योग्य DS File Backup फाईल नाही.')}
+    };reader.readAsText(file);
+  };
+  window.exportCSV=()=>{
+    const headers=['Register SR No','Customer Name','Current Stage','Stage Since','Waiting Days','Added On','Last Note'];
+    const rows=activeRecords().map(r=>[r.srNo,r.customerName,stages[r.status].label,formatDate(stageSince(r),true),daysSince(stageSince(r)),formatDate(r.createdAt,true),(r.history||[]).at(-1)?.note||'']);
+    const csv='\ufeff'+[headers,...rows].map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');downloadBlob(csv,`DS_File_Report_${dateStamp()}.csv`,'text/csv;charset=utf-8');toast('CSV download झाला.');
+  };
+  function downloadBlob(content,name,type){const blob=new Blob([content],{type});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+  function dateStamp(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+  function reportSelection(type){
+    const all=activeRecords();
+    if(type==='filtered')return {title:'Filtered File Report',items:getFiltered()};
+    if(type==='pending')return {title:'Pending File Report',items:all.filter(isPending)};
+    if(type==='sanctioned')return {title:'Sanction — Disbursement Pending Report',items:all.filter(r=>r.status==='SANCTIONED')};
+    if(type==='rejected')return {title:'Rejected File Report',items:all.filter(r=>r.status==='REJECTED')};
+    if(type==='disbursed')return {title:'Disbursement Report',items:all.filter(r=>r.status==='DISBURSED')};
+    return {title:'Complete File Position Report',items:all};
+  }
+  window.printReport=(type='all')=>{
+    const report=reportSelection(type);buildPrintArea(report.title,report.items,false);setTimeout(()=>window.print(),120);
+  };
+  window.printCurrentFile=()=>{const r=getRecord(selectedId);if(!r)return;closeModal('detailsModal');buildPrintArea(`Individual File Movement Report`,[r],true);setTimeout(()=>window.print(),120)};
+  function buildPrintArea(title,items,withHistory){
+    const all=activeRecords();const summary=Object.keys(stages).map(k=>[stages[k].label,all.filter(r=>r.status===k).length]);
+    const rows=items.map((r,i)=>{
+      const note=(r.history||[]).at(-1)?.note||'—';
+      const history=withHistory?`<br><strong>Movement:</strong> ${(r.history||[]).map(h=>`${h.from?stages[h.from]?.label+' → ':''}${stages[h.to]?.label} (${formatDate(h.at,true)})${h.note?' — '+esc(h.note):''}`).join('<br>')}`:'';
+      return `<tr><td>${i+1}</td><td>${esc(r.srNo)}</td><td>${esc(r.customerName)}</td><td>${esc(stages[r.status].label)}</td><td>${formatDate(stageSince(r),true)}</td><td>${daysSince(stageSince(r))}</td><td>${esc(note)}${history}</td></tr>`;
+    }).join('');
+    document.getElementById('printArea').innerHTML=`<div class="print-head"><div><h1>${esc(settings.unitName)}</h1><p>DS FILE FLOW DASHBOARD • ${esc(title)}</p></div><div class="print-meta">Generated: ${formatDate(nowISO(),true)}<br>${settings.officerName?'Prepared By: '+esc(settings.officerName):''}</div></div><div class="print-summary">${[['TOTAL',all.length],...summary].map(x=>`<div class="print-stat"><strong>${x[1]}</strong><span>${x[0]}</span></div>`).join('')}</div><h2 class="print-title">${esc(title)} — ${items.length} File(s)</h2>${items.length?`<table class="print-table"><thead><tr><th>#</th><th>SR NO.</th><th>CUSTOMER NAME</th><th>STAGE</th><th>STAGE DATE</th><th>DAYS</th><th>LAST NOTE / HISTORY</th></tr></thead><tbody>${rows}</tbody></table>`:'<div class="print-empty">या रिपोर्टमध्ये कोणतीही फाईल नाही.</div>'}<div class="print-foot"><span>Computer-generated file position report.</span><span>Page report • ${esc(settings.unitName)}</span></div>`;
+  }
+  function openModal(id){document.getElementById(id).classList.add('show');document.body.style.overflow='hidden'}
+  window.closeModal=(id)=>{document.getElementById(id).classList.remove('show');if(!document.querySelector('.modal-backdrop.show'))document.body.style.overflow=''};
+  window.backdropClose=(event,id)=>{if(event.target===event.currentTarget)closeModal(id)};
+  function tickClock(){const d=new Date();document.getElementById('todayDate').textContent=new Intl.DateTimeFormat('mr-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(d);document.getElementById('todayTime').textContent=new Intl.DateTimeFormat('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(d)}
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'){document.querySelectorAll('.modal-backdrop.show').forEach(m=>closeModal(m.id))}});
+  window.addEventListener('ds-firebase-status',e=>updateFirebaseStatus(e.detail));
+  window.addEventListener('storage',e=>{if([STORE_KEY,SETTINGS_KEY].includes(e.key)){records=loadJSON(STORE_KEY,[]);settings=Object.assign({},defaultSettings,loadJSON(SETTINGS_KEY,{}));renderAll()}});
+  tickClock();setInterval(tickClock,1000);renderAll();if(window.__DS_FIREBASE__&&!window.__DS_FIREBASE__.loading)updateFirebaseStatus(window.__DS_FIREBASE__);
+})();
+</script>
+</body>
+</html>
