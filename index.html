@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#071e36">
+  <meta id="themeColorMeta" name="theme-color" content="#075c4b">
   <title>DS File Flow Dashboard</title>
   <style>
     :root{
@@ -11,15 +11,21 @@
       --green:#087a62;--amber:#c98710;--red:#b83c49;--purple:#6950a1;
       --bg:#f3f7fa;--card:#fff;--text:#172535;--muted:#687b8d;
       --line:#d8e3eb;--soft:#edf4f8;--shadow:0 10px 30px rgba(8,35,61,.09);
+      --section-dark:#075c4b;--section-primary:#0a8b6f;--section-secondary:#20b892;
+      --section-soft:#e9f8f3;--section-halo:rgba(10,139,111,.15);
       --radius:18px;
     }
     *{box-sizing:border-box}
     html{scroll-behavior:smooth}
-    body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,"Noto Sans Devanagari","Segoe UI",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+    body{margin:0;background:radial-gradient(circle at 12% 0,var(--section-halo),transparent 34rem),var(--bg);color:var(--text);font-family:Inter,"Noto Sans Devanagari","Segoe UI",Arial,sans-serif;-webkit-font-smoothing:antialiased;transition:background-color .25s ease}
+    body[data-section="ALL"]{--section-dark:#0b3155;--section-primary:#1266a8;--section-secondary:#0e91a8;--section-soft:#eaf4f8;--section-halo:rgba(18,102,168,.14)}
+    body[data-section="KCC"]{--section-dark:#075c4b;--section-primary:#0a8b6f;--section-secondary:#20b892;--section-soft:#e9f8f3;--section-halo:rgba(10,139,111,.15)}
+    body[data-section="SHG"]{--section-dark:#7b214f;--section-primary:#b83278;--section-secondary:#e05a9d;--section-soft:#fff0f7;--section-halo:rgba(184,50,120,.15)}
+    body[data-section="SME"]{--section-dark:#463077;--section-primary:#6846a8;--section-secondary:#9171d2;--section-soft:#f4effc;--section-halo:rgba(104,70,168,.15)}
     button,input,select,textarea{font:inherit}
     button{cursor:pointer}
     .app{min-height:100vh;padding-bottom:90px}
-    .topbar{position:sticky;top:0;z-index:30;background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;box-shadow:0 5px 20px rgba(2,22,40,.2)}
+    .topbar{position:sticky;top:0;z-index:30;background:linear-gradient(135deg,var(--navy),var(--section-dark));color:#fff;box-shadow:0 5px 20px rgba(2,22,40,.2);transition:background .25s ease}
     .topbar-inner{max-width:1380px;margin:auto;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:14px}
     .brand{display:flex;align-items:center;gap:12px;min-width:0}
     .brand-mark{width:45px;height:45px;border-radius:14px;background:linear-gradient(145deg,#2ec4b6,#1474ad);display:grid;place-items:center;font-weight:900;box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)}
@@ -33,7 +39,7 @@
     .btn{border:0;border-radius:12px;padding:11px 14px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:.18s;min-height:42px}
     .btn:hover{transform:translateY(-1px)}
     .btn:active{transform:translateY(0)}
-    .btn-primary{background:linear-gradient(135deg,#18a38f,#087a62);color:#fff;box-shadow:0 7px 17px rgba(8,122,98,.24)}
+    .btn-primary{background:linear-gradient(135deg,var(--section-secondary),var(--section-primary));color:#fff;box-shadow:0 7px 17px var(--section-halo)}
     .btn-gold{background:linear-gradient(135deg,#e5aa34,#bd7a07);color:#fff}
     .btn-light{background:#fff;color:var(--navy)}
     .btn-soft{background:var(--soft);color:var(--navy)}
@@ -44,7 +50,7 @@
     .icon-btn{width:42px;height:42px;padding:0;border-radius:12px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;display:grid;place-items:center}
     .svg{width:19px;height:19px;display:block;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
     .container{max-width:1380px;margin:0 auto;padding:22px 18px}
-    .hero{background:linear-gradient(125deg,#0b3155,#0d5e78);border-radius:24px;padding:22px;color:#fff;box-shadow:var(--shadow);display:flex;justify-content:space-between;gap:20px;align-items:center;overflow:hidden;position:relative}
+    .hero{background:linear-gradient(125deg,var(--section-dark),var(--section-primary));border-radius:24px;padding:22px;color:#fff;box-shadow:var(--shadow);display:flex;justify-content:space-between;gap:20px;align-items:center;overflow:hidden;position:relative;transition:background .25s ease}
     .hero:after{content:"";position:absolute;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(74,219,197,.2),transparent 68%);right:-45px;top:-100px}
     .hero-copy{position:relative;z-index:1}
     .eyebrow{font-size:11px;letter-spacing:.14em;font-weight:900;color:#83e6d7;margin-bottom:7px}
@@ -53,12 +59,21 @@
     .hero-date{position:relative;z-index:1;text-align:right;flex:0 0 auto}
     .hero-date strong{display:block;font-size:19px}
     .hero-date span{font-size:12px;color:#c9dce9}
-    .tabs{display:flex;gap:8px;margin:18px 0;overflow:auto;padding:2px 1px;scrollbar-width:none}
+    .category-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:18px 0 10px}
+    .category-tab{border:1px solid var(--line);background:#fff;color:#526779;border-radius:15px;padding:12px 10px;font-weight:900;display:flex;align-items:center;justify-content:center;gap:7px;min-width:0;box-shadow:0 4px 13px rgba(12,42,67,.04)}
+    .category-tab span{background:#edf3f7;color:#526779;min-width:24px;height:24px;padding:0 6px;border-radius:999px;display:grid;place-items:center;font-size:10px}
+    .category-tab.active{background:linear-gradient(135deg,var(--navy),#164d73);border-color:var(--navy);color:#fff;box-shadow:0 7px 18px rgba(7,30,54,.2)}
+    .category-tab.active span{background:rgba(255,255,255,.17);color:#fff}
+    .category-tab[data-category="ALL"]{background:#edf4f8;color:#214f73}.category-tab[data-category="ALL"].active{background:linear-gradient(135deg,#0b3155,#1266a8);border-color:#0b3155;color:#fff}
+    .category-tab[data-category="KCC"]{background:#eefaf6;color:#08705b}.category-tab[data-category="KCC"].active{background:linear-gradient(135deg,#075c4b,#0fa17f);border-color:#075c4b;color:#fff}
+    .category-tab[data-category="SHG"]{background:#fff1f7;color:#a52d6b}.category-tab[data-category="SHG"].active{background:linear-gradient(135deg,#7b214f,#d14c8c);border-color:#7b214f;color:#fff}
+    .category-tab[data-category="SME"]{background:#f5f0fc;color:#60419b}.category-tab[data-category="SME"].active{background:linear-gradient(135deg,#463077,#8060c2);border-color:#463077;color:#fff}
+    .tabs{display:flex;gap:8px;margin:10px 0 18px;overflow:auto;padding:2px 1px;scrollbar-width:none}
     .tabs::-webkit-scrollbar{display:none}
     .tab{white-space:nowrap;border:1px solid var(--line);background:#fff;color:#526779;border-radius:999px;padding:10px 16px;font-weight:800}
-    .tab.active{background:var(--navy);color:#fff;border-color:var(--navy);box-shadow:0 6px 15px rgba(7,30,54,.16)}
+    .tab.active{background:var(--section-dark);color:#fff;border-color:var(--section-dark);box-shadow:0 6px 15px var(--section-halo)}
     .page{display:none}.page.active{display:block}
-    .stats-grid{display:grid;grid-template-columns:repeat(6,minmax(130px,1fr));gap:12px}
+    .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px}
     .stat{background:var(--card);border:1px solid #e4ecf2;border-radius:18px;padding:16px;box-shadow:0 5px 18px rgba(12,42,67,.05);position:relative;overflow:hidden}
     .stat:after{content:"";position:absolute;height:4px;left:0;right:0;bottom:0;background:var(--accent,#7790a4)}
     .stat-top{display:flex;justify-content:space-between;gap:8px;align-items:center}
@@ -113,10 +128,13 @@
     .status{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 9px;font-size:10px;font-weight:900;white-space:nowrap;background:var(--status-bg);color:var(--status-color)}
     .status:before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
     .status-BRANCH{--status-bg:#e9f1f8;--status-color:#336c99}
+    .status-PENDING{--status-bg:#e6f6f8;--status-color:#087f91}
     .status-AMCC{--status-bg:#f0ebff;--status-color:#6950a1}
     .status-SANCTIONED{--status-bg:#fff2d7;--status-color:#a66b00}
     .status-REJECTED{--status-bg:#ffebed;--status-color:#b33140}
     .status-DISBURSED{--status-bg:#e4f7f0;--status-color:#08765d}
+    .category-badge{display:inline-flex;align-items:center;border-radius:8px;padding:5px 8px;font-size:9px;font-weight:900;letter-spacing:.04em;white-space:nowrap}
+    .category-KCC{background:#e7f7f1;color:#08705b}.category-SHG{background:#ffedf6;color:#a52d6b}.category-SME{background:#f2ecfb;color:#60419b}.category-ALL{background:#e8eef3;color:#344e64}
     .actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
     .action-stage{border:0;border-radius:9px;padding:7px 9px;font-size:10px;font-weight:900;color:#fff;background:var(--action,#1266a8);white-space:nowrap}
     .more-btn{width:31px;height:31px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--navy);font-weight:900}
@@ -164,12 +182,24 @@
     .quick-menu .btn{font-size:11px}
     .toast{position:fixed;left:50%;bottom:88px;transform:translate(-50%,20px);opacity:0;pointer-events:none;background:#071e36;color:#fff;padding:11px 15px;border-radius:12px;font-size:12px;font-weight:800;z-index:200;box-shadow:0 12px 35px rgba(0,0,0,.25);transition:.25s;max-width:calc(100% - 34px);text-align:center}
     .toast.show{opacity:1;transform:translate(-50%,0)}
-    .bottom-add{display:none;position:fixed;right:18px;bottom:21px;z-index:50;width:58px;height:58px;border-radius:18px;border:0;background:linear-gradient(135deg,#18a38f,#087a62);color:#fff;font-size:30px;box-shadow:0 12px 28px rgba(8,122,98,.35)}
+    .bottom-add{display:none;position:fixed;right:18px;bottom:21px;z-index:50;width:58px;height:58px;border-radius:18px;border:0;background:linear-gradient(135deg,var(--section-secondary),var(--section-primary));color:#fff;font-size:30px;box-shadow:0 12px 28px var(--section-halo)}
+    .toggle-setting{border:1px solid var(--line);border-radius:14px;padding:12px 13px;display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--section-soft);cursor:pointer}
+    .toggle-copy strong{display:block;font-size:12px;color:var(--navy)}.toggle-copy small{display:block;font-size:10px;line-height:1.45;color:var(--muted);margin-top:3px}
+    .toggle-setting input{position:absolute;opacity:0;pointer-events:none}.toggle-switch{width:46px;height:26px;border-radius:999px;background:#aab9c4;flex:0 0 auto;position:relative;transition:.2s}
+    .toggle-switch:after{content:"";position:absolute;width:20px;height:20px;border-radius:50%;left:3px;top:3px;background:#fff;box-shadow:0 2px 5px rgba(0,0,0,.22);transition:.2s}
+    .toggle-setting input:checked + .toggle-switch{background:var(--section-primary)}.toggle-setting input:checked + .toggle-switch:after{transform:translateX(20px)}
+    .toggle-setting input:focus-visible + .toggle-switch{outline:3px solid var(--section-halo);outline-offset:2px}
+    .voice-test-row{display:flex;justify-content:flex-end;margin-top:8px}
+    .celebration-layer{position:fixed;inset:0;z-index:260;pointer-events:none;overflow:hidden}
+    .celebration-particle{position:absolute;left:var(--x);bottom:-52px;font-size:var(--size);opacity:0;filter:drop-shadow(0 4px 5px rgba(0,0,0,.16));animation:celebration-rise var(--duration) cubic-bezier(.18,.72,.25,1) var(--delay) forwards;will-change:transform,opacity}
+    @keyframes celebration-rise{0%{opacity:0;transform:translate3d(0,0,0) rotate(0deg) scale(.7)}12%{opacity:1}70%{opacity:1}100%{opacity:0;transform:translate3d(var(--drift),-108vh,0) rotate(var(--spin)) scale(1.15)}}
+    @media(prefers-reduced-motion:reduce){.celebration-particle{display:none}.hero,.topbar,body{transition:none}}
     #printArea{display:none}
     @media(max-width:1050px){.stats-grid{grid-template-columns:repeat(3,1fr)}.report-grid{grid-template-columns:repeat(2,1fr)}}
     @media(max-width:760px){
       .topbar-inner{padding:11px 13px}.brand-mark{width:40px;height:40px}.brand h1{font-size:15px}.brand p{font-size:9px}
       .top-actions .desktop-label,.firebase-text{display:none}.top-actions .btn{width:42px;padding:0}.firebase-pill{width:42px;padding:0;justify-content:center}.container{padding:14px 11px}.hero{border-radius:18px;padding:17px}.hero h2{font-size:20px}.hero-date{display:none}
+      .category-tabs{gap:6px;margin:13px 0 8px}.category-tab{padding:10px 5px;border-radius:12px;font-size:11px;gap:4px}.category-tab span{min-width:20px;height:20px;padding:0 4px;font-size:9px}
       .stats-grid{grid-template-columns:repeat(2,1fr);gap:9px}.stat{padding:14px}.stat-value{font-size:27px}.grid-2{grid-template-columns:1fr}.report-grid{grid-template-columns:1fr}
       .wa-report-bar{align-items:stretch;flex-direction:column}.wa-report-actions{display:grid;grid-template-columns:1fr 1fr}.wa-report-actions .btn{padding:10px 8px;font-size:11px}
       .table-wrap{display:none}.mobile-file-list{display:block}.toolbar{align-items:stretch}.search-wrap{min-width:100%}.select{flex:1;min-width:130px}.bottom-add{display:block}
@@ -184,7 +214,7 @@
       .print-head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #183b5b;padding-bottom:9px;margin-bottom:12px}
       .print-head h1{font-size:20px;margin:0;color:#102e49}.print-head p{font-size:9px;margin:4px 0 0;color:#555}
       .print-meta{text-align:right;font-size:9px;line-height:1.5}
-      .print-summary{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin:10px 0 12px}
+      .print-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(70px,1fr));gap:5px;margin:10px 0 12px}
       .print-stat{border:1px solid #bfcbd3;border-radius:6px;padding:6px;text-align:center}
       .print-stat strong{display:block;font-size:16px}.print-stat span{font-size:8px;color:#555}
       .print-title{font-size:13px;margin:10px 0 6px;color:#102e49}
@@ -233,6 +263,13 @@
       <div class="hero-date"><strong id="todayDate">—</strong><span id="todayTime">—</span></div>
     </section>
 
+    <nav class="category-tabs" aria-label="File section">
+      <button class="category-tab" data-category="ALL" onclick="setCategory('ALL')">ALL <span id="catCountALL">0</span></button>
+      <button class="category-tab active" data-category="KCC" onclick="setCategory('KCC')">KCC <span id="catCountKCC">0</span></button>
+      <button class="category-tab" data-category="SHG" onclick="setCategory('SHG')">SHG <span id="catCountSHG">0</span></button>
+      <button class="category-tab" data-category="SME" onclick="setCategory('SME')">SME <span id="catCountSME">0</span></button>
+    </nav>
+
     <nav class="tabs" aria-label="मुख्य विभाग">
       <button class="tab active" data-tab="dashboard" onclick="switchTab('dashboard')">डॅशबोर्ड</button>
       <button class="tab" data-tab="files" onclick="switchTab('files')">सर्व फाईल्स</button>
@@ -278,12 +315,13 @@
         </div>
         <select id="statusFilter" class="select" onchange="renderFiles()">
           <option value="ALL">सर्व स्टेज</option>
-          <option value="PENDING">सर्व Pending</option>
-          <option value="BRANCH">BRANCH</option>
-          <option value="AMCC">AMCC</option>
-          <option value="SANCTIONED">SANCTION</option>
-          <option value="REJECTED">REJECT</option>
-          <option value="DISBURSED">DISBURSED</option>
+          <option value="ALL_PENDING">सर्व Pending</option>
+          <option value="BRANCH" data-stage="BRANCH">BRANCH</option>
+          <option value="PENDING" data-stage="PENDING">PENDING</option>
+          <option value="AMCC" data-stage="AMCC">AMCC</option>
+          <option value="SANCTIONED" data-stage="SANCTIONED">SANCTION</option>
+          <option value="REJECTED" data-stage="REJECTED">REJECT</option>
+          <option value="DISBURSED" data-stage="DISBURSED">DISBURSED</option>
           <option value="ATTENTION">लक्ष देण्याच्या</option>
         </select>
         <select id="sortFilter" class="select" onchange="renderFiles()">
@@ -298,7 +336,7 @@
         <div class="table-meta"><span id="resultCount">0 फाईल्स</span><button class="btn btn-sm btn-outline" onclick="printReport('filtered')">ही यादी PDF</button></div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>REGISTER SR NO.</th><th>CUSTOMER NAME</th><th>CURRENT STAGE</th><th>STAGE DATE</th><th>WAITING</th><th>ADDED ON</th><th>ACTION</th></tr></thead>
+            <thead><tr><th>SECTION</th><th>REGISTER SR NO.</th><th>CUSTOMER NAME</th><th>CURRENT STAGE</th><th>STAGE DATE</th><th>WAITING</th><th>ADDED ON</th><th>ACTION</th></tr></thead>
             <tbody id="fileTableBody"></tbody>
           </table>
         </div>
@@ -307,11 +345,12 @@
     </section>
 
     <section id="page-reports" class="page">
+      <div id="reportScopeText" class="transition-banner"><strong>KCC</strong> विभागाचे रिपोर्ट खाली उपलब्ध आहेत.</div>
       <div class="report-grid">
         <article class="report-card"><div class="report-icon"><svg class="svg" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"></path><path d="M14 2v6h6M9 13h8M9 17h8"></path></svg></div><h4>Complete File Report</h4><p>सर्व Active फाईल्स, summary आणि stage-wise position.</p><button class="btn btn-primary" onclick="printReport('all')">PDF तयार करा</button></article>
-        <article class="report-card"><div class="report-icon"><svg class="svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></div><h4>Pending File Report</h4><p>Branch, AMCC आणि Sanction झाल्या पण Disbursement बाकी असलेल्या फाईल्स.</p><button class="btn btn-gold" onclick="printReport('pending')">Pending PDF</button></article>
-        <article class="report-card"><div class="report-icon"><svg class="svg" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"></path><path d="M21 12a9 9 0 1 1-5-8.3"></path></svg></div><h4>Sanction Report</h4><p>Sanction टप्प्यावर असलेल्या आणि Disbursement बाकी फाईल्स.</p><button class="btn btn-outline" onclick="printReport('sanctioned')">Sanction PDF</button></article>
-        <article class="report-card"><div class="report-icon"><svg class="svg" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"></path><circle cx="12" cy="12" r="9"></circle></svg></div><h4>Disbursement Report</h4><p>यशस्वीरीत्या Disbursed झालेल्या फाईल्सची यादी.</p><button class="btn btn-outline" onclick="printReport('disbursed')">Disbursed PDF</button></article>
+        <article class="report-card"><div class="report-icon"><svg class="svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></div><h4>Pending File Report</h4><p id="pendingReportText">Branch, AMCC आणि Sanction झाल्या पण Disbursement बाकी असलेल्या फाईल्स.</p><button class="btn btn-gold" onclick="printReport('pending')">Pending PDF</button></article>
+        <article class="report-card"><div class="report-icon"><svg class="svg" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"></path><path d="M21 12a9 9 0 1 1-5-8.3"></path></svg></div><h4>Sanction Report</h4><p id="sanctionReportText">Sanction टप्प्यावर असलेल्या आणि Disbursement बाकी फाईल्स.</p><button class="btn btn-outline" onclick="printReport('sanctioned')">Sanction PDF</button></article>
+        <article id="disbursedReportCard" class="report-card"><div class="report-icon"><svg class="svg" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"></path><circle cx="12" cy="12" r="9"></circle></svg></div><h4>Disbursement Report</h4><p>यशस्वीरीत्या Disbursed झालेल्या फाईल्सची यादी.</p><button class="btn btn-outline" onclick="printReport('disbursed')">Disbursed PDF</button></article>
         <article class="report-card"><div class="report-icon"><svg class="svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="m9 9 6 6M15 9l-6 6"></path></svg></div><h4>Reject Report</h4><p>Reject झालेल्या फाईल्स आणि नोंदवलेले कारण/शेरा.</p><button class="btn btn-outline" onclick="printReport('rejected')">Reject PDF</button></article>
         <article class="report-card"><div class="report-icon"><svg class="svg" viewBox="0 0 24 24"><path d="M4 4h16v16H4zM8 9h8M8 13h8M8 17h5"></path></svg></div><h4>Current Filter Report</h4><p>सर्व फाईल्स पेजवर निवडलेल्या filter प्रमाणे PDF.</p><button class="btn btn-outline" onclick="printReport('filtered')">Filtered PDF</button></article>
       </div>
@@ -338,6 +377,7 @@
 </div>
 
 <button class="bottom-add" aria-label="नवीन फाईल" onclick="openAddModal()">+</button>
+<div id="celebrationLayer" class="celebration-layer" aria-hidden="true"></div>
 <div id="toast" class="toast"></div>
 <div id="printArea"></div>
 
@@ -346,6 +386,7 @@
     <div class="modal-head"><div><h3 id="addTitle">नवीन फाईल नोंदवा</h3><p>फक्त दोन माहिती आवश्यक आहेत</p></div><button class="close-btn" onclick="closeModal('addModal')">×</button></div>
     <form id="addForm" onsubmit="addFile(event)">
       <div class="modal-body">
+        <div class="field"><label for="fileCategory">File Section <span class="req">*</span></label><select id="fileCategory" class="input" required><option value="KCC">KCC</option><option value="SHG">SHG</option><option value="SME">SME</option></select><div class="help">Entry कोणत्या विभागात ठेवायची ते निवडा.</div></div>
         <div class="field"><label for="srNo">Register SR No. <span class="req">*</span></label><input id="srNo" class="input" autocomplete="off" maxlength="40" placeholder="उदा. 245/2026" required><div class="help">Register मध्ये लिहिलेला अचूक क्रमांक.</div></div>
         <div class="field"><label for="customerName">Customer Name <span class="req">*</span></label><input id="customerName" class="input" autocomplete="off" maxlength="100" placeholder="ग्राहकाचे पूर्ण नाव" required></div>
         <div class="transition-banner">फाईल सेव्ह झाल्यावर तिची सुरुवातीची स्थिती आपोआप <strong>BRANCH</strong> राहील आणि आजची तारीख-वेळ नोंदवली जाईल.</div>
@@ -384,6 +425,7 @@
     <div class="modal-head"><div><h3>File Details Edit</h3><p>फक्त मूलभूत माहिती दुरुस्त करा</p></div><button class="close-btn" onclick="closeModal('editModal')">×</button></div>
     <form onsubmit="saveEdit(event)">
       <div class="modal-body">
+        <div class="field"><label for="editCategory">File Section <span class="req">*</span></label><select id="editCategory" class="input" required><option value="KCC">KCC</option><option value="SHG">SHG</option><option value="SME">SME</option></select></div>
         <div class="field"><label for="editSrNo">Register SR No. <span class="req">*</span></label><input id="editSrNo" class="input" maxlength="40" required></div>
         <div class="field"><label for="editName">Customer Name <span class="req">*</span></label><input id="editName" class="input" maxlength="100" required></div>
       </div>
@@ -407,6 +449,10 @@
         <div class="field"><label for="settingUnit">Branch / Office Name</label><input id="settingUnit" class="input" maxlength="100" placeholder="उदा. SBI Branch — Parli"></div>
         <div class="field"><label for="settingOfficer">Prepared By / Officer Name</label><input id="settingOfficer" class="input" maxlength="100" placeholder="उदा. Deepak Shengule"></div>
         <div class="field"><label for="settingDays">Attention After (Days)</label><input id="settingDays" class="input" type="number" min="1" max="90" required><div class="help">इतके दिवस स्टेज बदलला नाही तर फाईल “लक्ष द्या” मध्ये दिसेल.</div></div>
+        <div class="field">
+          <label class="toggle-setting" for="settingSound"><span class="toggle-copy"><strong>Celebration आणि Voice Alerts</strong><small>फाईल Add किंवा Stage Update झाल्यावर animation व छोटा आवाज.</small></span><input id="settingSound" type="checkbox" checked><span class="toggle-switch" aria-hidden="true"></span></label>
+          <div class="voice-test-row"><button type="button" class="btn btn-sm btn-soft" onclick="testVoiceAlert()">🔊 Voice तपासा</button></div>
+        </div>
         <div class="field"><label for="settingDbUrl">Realtime Database URL</label><input id="settingDbUrl" class="input" type="url" inputmode="url" maxlength="180" placeholder="https://...firebasedatabase.app"><div class="help">Firebase Console → Realtime Database → Data पेजवर वरती दिसणारा पूर्ण URL येथे Paste करा.</div></div>
         <div id="cloudSetupStatus" class="transition-banner">Cloud Sync सुरू करण्यासाठी Database URL आवश्यक आहे.</div>
       </div>
@@ -549,16 +595,50 @@
   'use strict';
   const STORE_KEY = 'ds.fileFlow.records.v1';
   const SETTINGS_KEY = 'ds.fileFlow.settings.v1';
+  const CATEGORY_KEY = 'ds.fileFlow.category.v1';
+  const categories = {KCC:{label:'KCC'},SHG:{label:'SHG'},SME:{label:'SME'}};
   const stages = {
     BRANCH:{label:'BRANCH', marathi:'शाखेत', color:'#336c99'},
+    PENDING:{label:'PENDING', marathi:'प्रलंबित', color:'#0e91a8'},
     AMCC:{label:'AMCC', marathi:'AMCC कडे', color:'#6950a1'},
     SANCTIONED:{label:'SANCTION', marathi:'मंजूर', color:'#a66b00'},
     REJECTED:{label:'REJECT', marathi:'नामंजूर', color:'#b33140'},
     DISBURSED:{label:'DISBURSED', marathi:'वितरित', color:'#08765d'}
   };
-  const defaultSettings = {unitName:'MY BRANCH / OFFICE', officerName:'', attentionDays:7, databaseURL:''};
-  let records = loadJSON(STORE_KEY, []);
+  const categoryStageMap = {
+    KCC:['BRANCH','AMCC','SANCTIONED','REJECTED','DISBURSED'],
+    SHG:['BRANCH','PENDING','SANCTIONED','REJECTED'],
+    SME:['BRANCH','AMCC','SANCTIONED','REJECTED','DISBURSED']
+  };
+  const allStageOrder=['BRANCH','PENDING','AMCC','SANCTIONED','REJECTED','DISBURSED'];
+  function stageKeysForCategory(category){return category==='ALL'?allStageOrder:(categoryStageMap[category]||categoryStageMap.KCC)}
+  function normalizeStageForCategory(category,status){
+    if(category==='SHG'){
+      if(status==='AMCC')return 'PENDING';
+      if(status==='DISBURSED')return 'SANCTIONED';
+      return categoryStageMap.SHG.includes(status)?status:'BRANCH';
+    }
+    if(status==='PENDING')return 'AMCC';
+    return stages[status]?status:'BRANCH';
+  }
+  function normalizeWorkflowRecord(record){
+    const category=categories[record?.category]?record.category:'KCC';
+    const status=normalizeStageForCategory(category,record?.status);
+    const history=(Array.isArray(record?.history)?record.history:[]).map(item=>{
+      if(!item||!stages[item.to])return null;
+      const to=normalizeStageForCategory(category,item.to);
+      const from=item.from&&stages[item.from]?normalizeStageForCategory(category,item.from):null;
+      if(from&&from===to)return null;
+      return {...item,from,to};
+    }).filter(Boolean);
+    return {...record,category,status,history};
+  }
+  const defaultSettings = {unitName:'MY BRANCH / OFFICE', officerName:'', attentionDays:7, databaseURL:'', soundEnabled:true};
+  const loadedRecords = loadJSON(STORE_KEY, []);
+  let records=Array.isArray(loadedRecords)?loadedRecords.map(normalizeWorkflowRecord):[];
+  if(JSON.stringify(loadedRecords)!==JSON.stringify(records)){try{localStorage.setItem(STORE_KEY,JSON.stringify(records))}catch(_){} }
   let settings = Object.assign({}, defaultSettings, loadJSON(SETTINGS_KEY, {}));
+  let currentCategory=localStorage.getItem(CATEGORY_KEY)||'KCC';if(currentCategory!=='ALL'&&!categories[currentCategory])currentCategory='KCC';
   let pendingTransition = null;
   let selectedId = null;
   let toastTimer = null;
@@ -581,9 +661,11 @@
   function nowISO(){return new Date().toISOString()}
   function esc(value){return String(value??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
   function normalizeSr(value){return String(value||'').trim().replace(/\s+/g,' ').toUpperCase()}
-  function activeRecords(){return records.filter(r=>!r.archivedAt)}
-  function archivedRecords(){return records.filter(r=>!!r.archivedAt)}
+  function allActiveRecords(){return records.filter(r=>!r.archivedAt)}
+  function activeRecords(){return allActiveRecords().filter(r=>currentCategory==='ALL'||r.category===currentCategory)}
+  function archivedRecords(){return records.filter(r=>!!r.archivedAt&&(currentCategory==='ALL'||r.category===currentCategory))}
   function getRecord(id){return records.find(r=>r.id===id)}
+  function categoryLabel(){return currentCategory==='ALL'?'ALL SECTIONS':categories[currentCategory].label}
   function stageSince(record){
     const changes=(record.history||[]).filter(h=>h.to===record.status);
     return changes.length?changes[changes.length-1].at:record.updatedAt||record.createdAt;
@@ -595,22 +677,63 @@
     const opt=withTime?{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}:{day:'2-digit',month:'short',year:'numeric'};
     return new Intl.DateTimeFormat('en-IN',opt).format(new Date(iso));
   }
-  function isPending(record){return ['BRANCH','AMCC','SANCTIONED'].includes(record.status)}
+  function isPending(record){return record.category==='SHG'?['BRANCH','PENDING'].includes(record.status):['BRANCH','AMCC','SANCTIONED'].includes(record.status)}
   function needsAttention(record){return isPending(record)&&daysSince(stageSince(record))>=Number(settings.attentionDays||7)}
   function countBy(status){return activeRecords().filter(r=>r.status===status).length}
   function toast(message){
     const el=document.getElementById('toast');el.textContent=message;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2600);
   }
+  function renderTheme(){
+    document.body.dataset.section=currentCategory;
+    const colors={ALL:'#0b3155',KCC:'#075c4b',SHG:'#7b214f',SME:'#463077'};const meta=document.getElementById('themeColorMeta');if(meta)meta.content=colors[currentCategory]||colors.KCC;
+  }
+  function celebrate(category){
+    if(settings.soundEnabled===false||window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)return;
+    const layer=document.getElementById('celebrationLayer');if(!layer)return;layer.innerHTML='';
+    const emojiSets={KCC:['🎉','✨','✅','🌿','📁'],SHG:['🎉','✨','🌸','💗','📁'],SME:['🎉','✨','💜','⭐','📁']};const emojis=emojiSets[category]||emojiSets.KCC;
+    for(let i=0;i<22;i++){
+      const particle=document.createElement('span');particle.className='celebration-particle';particle.textContent=emojis[i%emojis.length];
+      particle.style.setProperty('--x',`${3+Math.random()*94}%`);particle.style.setProperty('--size',`${18+Math.random()*18}px`);particle.style.setProperty('--duration',`${1.45+Math.random()*.65}s`);particle.style.setProperty('--delay',`${Math.random()*.28}s`);particle.style.setProperty('--drift',`${-45+Math.random()*90}px`);particle.style.setProperty('--spin',`${-160+Math.random()*320}deg`);layer.appendChild(particle);
+    }
+    setTimeout(()=>{layer.innerHTML=''},2500);
+  }
+  function speakFileUpdate(record,action='status',force=false){
+    if((!force&&settings.soundEnabled===false)||!window.speechSynthesis||typeof window.SpeechSynthesisUtterance!=='function')return false;
+    const categoryVoice={KCC:'के सी सी',SHG:'एस एच जी',SME:'एस एम ई'}[record.category]||record.category;
+    const stageVoice={BRANCH:'ब्रँच',PENDING:'पेंडिंग',AMCC:'ए एम सी सी',SANCTIONED:'सॅंक्शन',REJECTED:'रिजेक्ट',DISBURSED:'डिस्बर्स्ड'}[record.status]||record.status;
+    let message='';
+    if(action==='added')message=`अभिनंदन! ${categoryVoice} फाईल यशस्वीरीत्या नोंदवली.`;
+    else if(action==='undo')message=`${categoryVoice} फाईल पुन्हा ${stageVoice} मध्ये आली.`;
+    else if(record.status==='SANCTIONED')message=`अभिनंदन! ${categoryVoice} फाईल सॅंक्शन झाली.`;
+    else if(record.status==='DISBURSED')message=`अभिनंदन! ${categoryVoice} फाईल डिस्बर्स्ड झाली.`;
+    else if(record.status==='REJECTED')message=`${categoryVoice} फाईल रिजेक्ट म्हणून अपडेट झाली.`;
+    else message=`${categoryVoice} फाईल ${stageVoice} मध्ये अपडेट झाली.`;
+    try{
+      window.speechSynthesis.cancel();const utterance=new window.SpeechSynthesisUtterance(message);utterance.lang='mr-IN';utterance.rate=.94;utterance.pitch=1.03;utterance.volume=.9;
+      const voices=window.speechSynthesis.getVoices?.()||[];utterance.voice=voices.find(v=>/^mr[-_]/i.test(v.lang))||voices.find(v=>/^hi[-_]/i.test(v.lang))||null;window.speechSynthesis.speak(utterance);return true;
+    }catch(_){return false}
+  }
+  window.testVoiceAlert=()=>{
+    const enabled=document.getElementById('settingSound')?.checked;if(!enabled){toast('Voice Alert आधी ON करा.');return}
+    const category=currentCategory==='ALL'?'KCC':currentCategory;toast(speakFileUpdate({category,status:'SANCTIONED'},'status',true)?'Voice Alert चालू आहे.':'या browser मध्ये Voice उपलब्ध नाही.');
+  };
   function statusBadge(status){const s=stages[status]||stages.BRANCH;return `<span class="status status-${esc(status)}">${esc(s.label)}</span>`}
+  function categoryBadge(category){const value=categories[category]?category:'KCC';return `<span class="category-badge category-${value}">${value}</span>`}
   function nextActions(record){
-    const map={
+    const regularMap={
       BRANCH:[['AMCC','AMCC ला पाठवा','#6950a1']],
       AMCC:[['SANCTIONED','Sanction','#a66b00'],['REJECTED','Reject','#b33140'],['BRANCH','Branch Return','#336c99']],
       SANCTIONED:[['DISBURSED','Disburse','#08765d'],['AMCC','AMCC Return','#6950a1']],
       REJECTED:[['BRANCH','Re-open','#336c99']],
       DISBURSED:[['SANCTIONED','Correction','#a66b00']]
     };
-    return map[record.status]||[];
+    const shgMap={
+      BRANCH:[['PENDING','Pending करा','#0e91a8']],
+      PENDING:[['SANCTIONED','Sanction','#a66b00'],['REJECTED','Reject','#b33140'],['BRANCH','Branch Return','#336c99']],
+      SANCTIONED:[['PENDING','Correction / Pending','#0e91a8']],
+      REJECTED:[['BRANCH','Re-open','#336c99']]
+    };
+    return (record.category==='SHG'?shgMap:regularMap)[record.status]||[];
   }
   function canUndo(record){
     const history=record?.history||[];const last=history[history.length-1];return !!(last&&last.from&&stages[last.from]&&last.to===record.status);
@@ -620,7 +743,7 @@
     const last=record.history[record.history.length-1];const previousStage=last.from;
     if(!confirm(`${record.customerName}: ${stages[record.status].label} मधून पुन्हा ${stages[previousStage].label} करायचे?`))return false;
     const at=nowISO(),from=record.status;record.status=previousStage;record.updatedAt=at;record.history.push({from,to:previousStage,at,note:`Undo: ${stages[from].label} action reversed`});
-    persist();renderAll();toast(`Undo पूर्ण — फाईल ${stages[previousStage].label} मध्ये आली.`);return true;
+    persist();renderAll();toast(`Undo पूर्ण — फाईल ${stages[previousStage].label} मध्ये आली.`);speakFileUpdate(record,'undo');return true;
   }
   window.undoFileStage=(id)=>undoStageForRecord(id);
   window.undoCurrentFile=()=>{if(undoStageForRecord(selectedId))closeModal('detailsModal')};
@@ -628,7 +751,21 @@
     const arr=nextActions(record);const shown=limit?arr.slice(0,2):arr;
     return shown.map(a=>`<button class="action-stage" style="--action:${a[2]}" onclick="openStageModal('${record.id}','${a[0]}')">${esc(a[1])}</button>`).join('');
   }
-  function renderAll(){renderHeader();renderDashboard();renderFiles();renderReports()}
+  function renderCategoryTabs(){
+    const all=allActiveRecords();const counts={ALL:all.length,KCC:all.filter(r=>r.category==='KCC').length,SHG:all.filter(r=>r.category==='SHG').length,SME:all.filter(r=>r.category==='SME').length};
+    document.querySelectorAll('.category-tab').forEach(tab=>tab.classList.toggle('active',tab.dataset.category===currentCategory));
+    Object.entries(counts).forEach(([key,value])=>{const el=document.getElementById('catCount'+key);if(el)el.textContent=value});
+  }
+  window.setCategory=(category)=>{
+    if(category!=='ALL'&&!categories[category])return;currentCategory=category;localStorage.setItem(CATEGORY_KEY,currentCategory);renderAll();toast(`${categoryLabel()} विभाग निवडला.`);
+  };
+  function renderStageFilter(){
+    const filter=document.getElementById('statusFilter');if(!filter||!filter.options)return;
+    const allowed=stageKeysForCategory(currentCategory);
+    Array.from(filter.options).forEach(option=>{const stage=option.dataset?.stage;if(stage){option.hidden=!allowed.includes(stage);option.disabled=option.hidden}});
+    if(filter.selectedOptions?.[0]?.disabled)filter.value='ALL';
+  }
+  function renderAll(){renderTheme();renderCategoryTabs();renderStageFilter();renderHeader();renderDashboard();renderFiles();renderReports()}
   function updateFirebaseStatus(detail){
     const badge=document.getElementById('firebaseStatus');const label=document.getElementById('firebaseStatusText');const setup=document.getElementById('cloudSetupStatus');if(!badge||!label)return;
     badge.classList.remove('ready','error');
@@ -640,20 +777,20 @@
   }
   function renderHeader(){
     document.getElementById('unitSubTitle').textContent=settings.unitName.toUpperCase();
-    document.getElementById('heroTitle').textContent=settings.unitName==='MY BRANCH / OFFICE'?'आज आपल्या फाईल्स कुठे आहेत?':settings.unitName+' — File Position';
+    const baseTitle=settings.unitName==='MY BRANCH / OFFICE'?'आज आपल्या फाईल्स कुठे आहेत?':settings.unitName;
+    document.getElementById('heroTitle').textContent=currentCategory==='ALL'?`${baseTitle} — Overall File Position`:`${baseTitle} — ${categoryLabel()} File Position`;
     document.getElementById('attentionSub').textContent=`${settings.attentionDays}+ दिवस हालचाल नसलेल्या Pending फाईल्स`;
+    document.getElementById('reportScopeText').innerHTML=currentCategory==='SHG'?'<strong>SHG</strong> रिपोर्टमध्ये फक्त BRANCH, PENDING, SANCTION आणि REJECT टप्पे आहेत.':'<strong>'+categoryLabel()+'</strong> विभागाचे रिपोर्ट खाली उपलब्ध आहेत. वरचा Tab बदलल्यास Report आपोआप बदलेल.';
   }
   function renderDashboard(){
-    const all=activeRecords();const counts={BRANCH:countBy('BRANCH'),AMCC:countBy('AMCC'),SANCTIONED:countBy('SANCTIONED'),REJECTED:countBy('REJECTED'),DISBURSED:countBy('DISBURSED')};
-    const statData=[
-      ['TOTAL FILES',all.length,'सर्व Active नोंदी','#173f62'],['BRANCH',counts.BRANCH,'शाखेत उपलब्ध','#336c99'],['AMCC',counts.AMCC,'प्रक्रियेत','#6950a1'],['SANCTION',counts.SANCTIONED,'Disbursement बाकी','#c98710'],['REJECT',counts.REJECTED,'नामंजूर','#b83c49'],['DISBURSED',counts.DISBURSED,'पूर्ण झालेल्या','#087a62']
-    ];
+    const all=activeRecords();const stageKeys=stageKeysForCategory(currentCategory);const counts=Object.fromEntries(stageKeys.map(key=>[key,countBy(key)]));
+    const stageNotes={BRANCH:'शाखेत उपलब्ध',PENDING:'प्रक्रियेत',AMCC:'AMCC कडे',SANCTIONED:currentCategory==='SHG'?'मंजूर':currentCategory==='ALL'?'मंजूर / Disbursement बाकी':'Disbursement बाकी',REJECTED:'नामंजूर',DISBURSED:'पूर्ण झालेल्या'};
+    const statData=[['TOTAL FILES',all.length,'सर्व Active नोंदी','#173f62'],...stageKeys.map(key=>[stages[key].label,counts[key],stageNotes[key],stages[key].color])];
     document.getElementById('statsGrid').innerHTML=statData.map(x=>`<article class="stat" style="--accent:${x[3]}"><div class="stat-top"><span class="stat-label">${x[0]}</span><span class="stat-dot"></span></div><div class="stat-value">${x[1]}</div><div class="stat-note">${x[2]}</div></article>`).join('');
     const max=Math.max(1,...Object.values(counts));
-    document.getElementById('pipeline').innerHTML=Object.keys(stages).map(k=>`<div class="pipe-row"><div class="pipe-label">${stages[k].label}</div><div class="pipe-track"><div class="pipe-fill" style="--fill:${stages[k].color};width:${(counts[k]/max)*100}%"></div></div><div class="pipe-count">${counts[k]}</div></div>`).join('');
-    const decided=counts.SANCTIONED+counts.REJECTED+counts.DISBURSED;
+    document.getElementById('pipeline').innerHTML=stageKeys.map(k=>`<div class="pipe-row"><div class="pipe-label">${stages[k].label}</div><div class="pipe-track"><div class="pipe-fill" style="--fill:${stages[k].color};width:${(counts[k]/max)*100}%"></div></div><div class="pipe-count">${counts[k]}</div></div>`).join('');
     const sanctionedEver=all.filter(r=>(r.history||[]).some(h=>h.to==='SANCTIONED'||h.to==='DISBURSED')).length;
-    const sanctionRate=decided?Math.round((sanctionedEver/(sanctionedEver+counts.REJECTED))*100):0;
+    const decisions=sanctionedEver+(counts.REJECTED||0);const sanctionRate=decisions?Math.round((sanctionedEver/decisions)*100):0;
     const pending=all.filter(isPending).length;const attention=all.filter(needsAttention).length;
     const avgPending=all.filter(isPending).length?Math.round(all.filter(isPending).reduce((s,r)=>s+daysSince(stageSince(r)),0)/all.filter(isPending).length):0;
     document.getElementById('metrics').innerHTML=`
@@ -662,18 +799,18 @@
       <div class="metric"><strong>${sanctionRate}%</strong><span>Sanction Rate</span></div>
       <div class="metric"><strong>${avgPending}</strong><span>Avg. Pending Days</span></div>`;
     const attentionList=all.filter(needsAttention).sort((a,b)=>daysSince(stageSince(b))-daysSince(stageSince(a))).slice(0,6);
-    document.getElementById('attentionList').innerHTML=attentionList.length?attentionList.map(r=>`<div class="attention-item"><div class="attention-main"><strong>${esc(r.customerName)}</strong><span>SR ${esc(r.srNo)} • ${stages[r.status].label} • ${formatDate(stageSince(r))}</span></div><button class="age-badge" style="border:0" onclick="showDetails('${r.id}')">${daysSince(stageSince(r))} दिवस</button></div>`).join(''):`<div class="empty">सध्या लक्ष देण्यासारखी जुनी Pending फाईल नाही.</div>`;
+    document.getElementById('attentionList').innerHTML=attentionList.length?attentionList.map(r=>`<div class="attention-item"><div class="attention-main"><strong>${esc(r.customerName)}</strong><span>${currentCategory==='ALL'?esc(r.category)+' • ':''}SR ${esc(r.srNo)} • ${stages[r.status].label} • ${formatDate(stageSince(r))}</span></div><button class="age-badge" style="border:0" onclick="showDetails('${r.id}')">${daysSince(stageSince(r))} दिवस</button></div>`).join(''):`<div class="empty">सध्या लक्ष देण्यासारखी जुनी Pending फाईल नाही.</div>`;
     const activities=[];
     all.forEach(r=>(r.history||[]).forEach(h=>activities.push({record:r,...h})));
     activities.sort((a,b)=>new Date(b.at)-new Date(a.at));
-    document.getElementById('activityList').innerHTML=activities.length?activities.slice(0,6).map(a=>`<div class="activity-item"><div class="activity-main"><strong>${esc(a.record.customerName)}</strong><span>SR ${esc(a.record.srNo)} • ${a.from?esc(stages[a.from]?.label||a.from)+' → ':''}${esc(stages[a.to]?.label||a.to)}</span></div><div class="activity-time">${formatDate(a.at,true)}</div></div>`).join(''):`<div class="empty">अजून कोणतीही हालचाल नोंदलेली नाही.</div>`;
+    document.getElementById('activityList').innerHTML=activities.length?activities.slice(0,6).map(a=>`<div class="activity-item"><div class="activity-main"><strong>${esc(a.record.customerName)}</strong><span>${currentCategory==='ALL'?esc(a.record.category)+' • ':''}SR ${esc(a.record.srNo)} • ${a.from?esc(stages[a.from]?.label||a.from)+' → ':''}${esc(stages[a.to]?.label||a.to)}</span></div><div class="activity-time">${formatDate(a.at,true)}</div></div>`).join(''):`<div class="empty">अजून कोणतीही हालचाल नोंदलेली नाही.</div>`;
   }
   function getFiltered(){
     const q=document.getElementById('searchInput')?.value.trim().toLocaleLowerCase('en-IN')||'';
     const filter=document.getElementById('statusFilter')?.value||'ALL';
     const sort=document.getElementById('sortFilter')?.value||'updatedDesc';
     let list=activeRecords().filter(r=>!q||r.customerName.toLocaleLowerCase('en-IN').includes(q)||r.srNo.toLocaleLowerCase('en-IN').includes(q));
-    if(filter==='PENDING')list=list.filter(isPending);else if(filter==='ATTENTION')list=list.filter(needsAttention);else if(filter!=='ALL')list=list.filter(r=>r.status===filter);
+    if(filter==='ALL_PENDING')list=list.filter(isPending);else if(filter==='ATTENTION')list=list.filter(needsAttention);else if(filter!=='ALL')list=list.filter(r=>r.status===filter);
     list.sort((a,b)=>{
       if(sort==='ageDesc')return daysSince(stageSince(b))-daysSince(stageSince(a));
       if(sort==='srAsc')return a.srNo.localeCompare(b.srNo,undefined,{numeric:true,sensitivity:'base'});
@@ -683,35 +820,39 @@
     return list;
   }
   function renderFiles(){
-    const list=getFiltered();document.getElementById('resultCount').textContent=`${list.length} फाईल${list.length===1?'':'्स'}`;
+    const list=getFiltered();document.getElementById('resultCount').textContent=`${categoryLabel()} • ${list.length} फाईल${list.length===1?'':'्स'}`;
     const body=document.getElementById('fileTableBody');const mobile=document.getElementById('mobileFileList');
-    if(!list.length){body.innerHTML='<tr><td colspan="7"><div class="empty">या filter मध्ये कोणतीही फाईल नाही.</div></td></tr>';mobile.innerHTML='<div class="empty">या filter मध्ये कोणतीही फाईल नाही.</div>';return}
+    if(!list.length){body.innerHTML='<tr><td colspan="8"><div class="empty">या विभागात किंवा filter मध्ये कोणतीही फाईल नाही.</div></td></tr>';mobile.innerHTML='<div class="empty">या विभागात किंवा filter मध्ये कोणतीही फाईल नाही.</div>';return}
     body.innerHTML=list.map(r=>{
-      const age=daysSince(stageSince(r));return `<tr><td class="sr">${esc(r.srNo)}</td><td><div class="customer" title="${esc(r.customerName)}">${esc(r.customerName)}</div></td><td>${statusBadge(r.status)}</td><td>${formatDate(stageSince(r),true)}</td><td><span class="age-badge">${age} दिवस</span></td><td>${formatDate(r.createdAt)}</td><td><div class="actions">${stageButtons(r,true)}<button class="more-btn" onclick="openMore('${r.id}')">•••</button></div></td></tr>`
+      const age=daysSince(stageSince(r));return `<tr><td>${categoryBadge(r.category)}</td><td class="sr">${esc(r.srNo)}</td><td><div class="customer" title="${esc(r.customerName)}">${esc(r.customerName)}</div></td><td>${statusBadge(r.status)}</td><td>${formatDate(stageSince(r),true)}</td><td><span class="age-badge">${age} दिवस</span></td><td>${formatDate(r.createdAt)}</td><td><div class="actions">${stageButtons(r,true)}<button class="more-btn" onclick="openMore('${r.id}')">•••</button></div></td></tr>`
     }).join('');
-    mobile.innerHTML=list.map(r=>{const age=daysSince(stageSince(r));return `<article class="file-card"><div class="file-top"><div><div class="file-name">${esc(r.customerName)}</div><div class="file-sr">Register SR No. <strong>${esc(r.srNo)}</strong></div></div>${statusBadge(r.status)}</div><div class="file-info"><div>STAGE DATE<strong>${formatDate(stageSince(r),true)}</strong></div><div>WAITING<strong>${age} दिवस</strong></div></div><div class="file-actions">${stageButtons(r,true)}<button class="btn btn-sm btn-outline" onclick="openMore('${r.id}')">More</button></div></article>`}).join('');
+    mobile.innerHTML=list.map(r=>{const age=daysSince(stageSince(r));return `<article class="file-card"><div class="file-top"><div><div style="margin-bottom:7px">${categoryBadge(r.category)}</div><div class="file-name">${esc(r.customerName)}</div><div class="file-sr">Register SR No. <strong>${esc(r.srNo)}</strong></div></div>${statusBadge(r.status)}</div><div class="file-info"><div>STAGE DATE<strong>${formatDate(stageSince(r),true)}</strong></div><div>WAITING<strong>${age} दिवस</strong></div></div><div class="file-actions">${stageButtons(r,true)}<button class="btn btn-sm btn-outline" onclick="openMore('${r.id}')">More</button></div></article>`}).join('');
   }
   window.renderFiles=renderFiles;
   function renderReports(){
     const archived=archivedRecords();document.getElementById('archiveCount').textContent=archived.length;
-    document.getElementById('archiveList').innerHTML=archived.length?archived.sort((a,b)=>new Date(b.archivedAt)-new Date(a.archivedAt)).map(r=>`<div class="archive-item"><div><strong>${esc(r.customerName)} • SR ${esc(r.srNo)}</strong><span>Archived: ${formatDate(r.archivedAt,true)}</span></div><button class="btn btn-sm btn-soft" onclick="restoreFile('${r.id}')">Restore</button></div>`).join(''):'<div class="empty">Archived नोंदी नाहीत.</div>';
+    document.getElementById('archiveList').innerHTML=archived.length?archived.sort((a,b)=>new Date(b.archivedAt)-new Date(a.archivedAt)).map(r=>`<div class="archive-item"><div><strong>${esc(r.category)} • ${esc(r.customerName)} • SR ${esc(r.srNo)}</strong><span>Archived: ${formatDate(r.archivedAt,true)}</span></div><button class="btn btn-sm btn-soft" onclick="restoreFile('${r.id}')">Restore</button></div>`).join(''):'<div class="empty">या विभागात Archived नोंदी नाहीत.</div>';
+    const shg=currentCategory==='SHG';const allSections=currentCategory==='ALL';document.getElementById('disbursedReportCard').style.display=shg?'none':'';
+    document.getElementById('pendingReportText').textContent=shg?'BRANCH आणि PENDING टप्प्यावर असलेल्या SHG फाईल्स.':allSections?'सर्व विभागांतील नियमानुसार Pending असलेल्या फाईल्स.':'Branch, AMCC आणि Sanction झाल्या पण Disbursement बाकी असलेल्या फाईल्स.';
+    document.getElementById('sanctionReportText').textContent=shg?'मंजूर झालेल्या SHG फाईल्सची यादी.':allSections?'सर्व विभागांतील Sanction झालेल्या फाईल्सची यादी.':'Sanction टप्प्यावर असलेल्या आणि Disbursement बाकी फाईल्स.';
   }
   window.switchTab=(name)=>{
     document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id===`page-${name}`));
     document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===name));
     if(name==='files')renderFiles();if(name==='reports')renderReports();window.scrollTo({top:0,behavior:'smooth'});
   };
-  window.openAddModal=()=>{document.getElementById('addForm').reset();openModal('addModal');setTimeout(()=>document.getElementById('srNo').focus(),100)};
+  window.openAddModal=()=>{document.getElementById('addForm').reset();document.getElementById('fileCategory').value=currentCategory==='ALL'?'KCC':currentCategory;openModal('addModal');setTimeout(()=>document.getElementById('srNo').focus(),100)};
   window.addFile=(event)=>{
-    event.preventDefault();const srNo=normalizeSr(document.getElementById('srNo').value);const name=document.getElementById('customerName').value.trim().replace(/\s+/g,' ');
+    event.preventDefault();const category=document.getElementById('fileCategory').value;const srNo=normalizeSr(document.getElementById('srNo').value);const name=document.getElementById('customerName').value.trim().replace(/\s+/g,' ');
     if(!srNo||!name)return;
-    if(records.some(r=>!r.archivedAt&&normalizeSr(r.srNo)===srNo)){toast('हा Register SR No. आधीच नोंदलेला आहे.');document.getElementById('srNo').focus();return}
-    const at=nowISO();records.push({id:uid(),srNo,customerName:name,status:'BRANCH',createdAt:at,updatedAt:at,archivedAt:null,history:[{from:null,to:'BRANCH',at,note:'New file registered'}]});
-    persist();closeModal('addModal');renderAll();toast('फाईल BRANCH स्टेजमध्ये नोंदली.');
+    if(!categories[category])return;
+    if(records.some(r=>!r.archivedAt&&r.category===category&&normalizeSr(r.srNo)===srNo)){toast(`${category} मध्ये हा Register SR No. आधीच नोंदलेला आहे.`);document.getElementById('srNo').focus();return}
+    const at=nowISO();const record={id:uid(),category,srNo,customerName:name,status:'BRANCH',createdAt:at,updatedAt:at,archivedAt:null,history:[{from:null,to:'BRANCH',at,note:'New file registered'}]};records.push(record);
+    persist();closeModal('addModal');renderAll();toast(`${category} फाईल BRANCH स्टेजमध्ये नोंदली.`);celebrate(category);speakFileUpdate(record,'added');
   };
   window.openStageModal=(id,target)=>{
-    const r=getRecord(id);if(!r||!stages[target])return;pendingTransition={id,target};
-    document.getElementById('stageFileInfo').textContent=`${r.customerName} • SR ${r.srNo}`;
+    const r=getRecord(id);if(!r||!stages[target]||!nextActions(r).some(action=>action[0]===target)){toast('या विभागासाठी हा Stage उपलब्ध नाही.');return}pendingTransition={id,target};
+    document.getElementById('stageFileInfo').textContent=`${r.category} • ${r.customerName} • SR ${r.srNo}`;
     document.getElementById('transitionText').innerHTML=`<strong>${stages[r.status].label}</strong> मधून <strong>${stages[target].label}</strong> मध्ये स्थिती बदलत आहात.`;
     const required=target==='REJECTED';document.getElementById('stageNote').value='';document.getElementById('stageNote').required=required;
     document.getElementById('noteRequirement').textContent=required?'(Reject साठी आवश्यक)':'(ऐच्छिक)';
@@ -720,28 +861,30 @@
   };
   window.confirmStageChange=(event)=>{
     event.preventDefault();if(!pendingTransition)return;const r=getRecord(pendingTransition.id);if(!r)return;
+    if(!nextActions(r).some(action=>action[0]===pendingTransition.target)){pendingTransition=null;closeModal('stageModal');toast('या विभागासाठी हा Stage उपलब्ध नाही.');return}
     const note=document.getElementById('stageNote').value.trim();if(pendingTransition.target==='REJECTED'&&!note){toast('Reject चे कारण लिहा.');return}
     const at=nowISO(),from=r.status;r.status=pendingTransition.target;r.updatedAt=at;r.history=r.history||[];r.history.push({from,to:r.status,at,note});
-    persist();closeModal('stageModal');pendingTransition=null;renderAll();toast(`स्थिती ${stages[r.status].label} केली.`);
+    persist();closeModal('stageModal');pendingTransition=null;renderAll();toast(`स्थिती ${stages[r.status].label} केली.`);if(['SANCTIONED','DISBURSED'].includes(r.status))celebrate(r.category);speakFileUpdate(r,'status');
   };
   window.openMore=(id)=>{
-    const r=getRecord(id);if(!r)return;selectedId=id;document.getElementById('moreFileInfo').textContent=`${r.customerName} • SR ${r.srNo}`;
+    const r=getRecord(id);if(!r)return;selectedId=id;document.getElementById('moreFileInfo').textContent=`${r.category} • ${r.customerName} • SR ${r.srNo}`;
     const actionHtml=nextActions(r).map(a=>`<button class="btn" style="background:${a[2]};color:#fff" onclick="closeModal('moreModal');openStageModal('${r.id}','${a[0]}')">${esc(a[1])}</button>`).join('');
     const undoHtml=canUndo(r)?`<button class="btn btn-gold" onclick="closeModal('moreModal');undoFileStage('${r.id}')">↶ Undo Last Stage</button>`:'';
     document.getElementById('quickMenu').innerHTML=actionHtml+undoHtml+`<button class="btn btn-soft" onclick="closeModal('moreModal');showDetails('${r.id}')">इतिहास / Details</button><button class="btn btn-outline" onclick="closeModal('moreModal');editFile('${r.id}')">Name / SR Edit</button>`;
     openModal('moreModal');
   };
   window.showDetails=(id)=>{
-    const r=getRecord(id);if(!r)return;selectedId=id;document.getElementById('detailsTitle').textContent=r.customerName;document.getElementById('detailsSub').textContent=`Register SR No. ${r.srNo}`;
-    document.getElementById('detailsStatus').innerHTML=`Current Stage: <strong>${stages[r.status].label}</strong> • Since ${formatDate(stageSince(r),true)} • ${daysSince(stageSince(r))} दिवस`;
+    const r=getRecord(id);if(!r)return;selectedId=id;document.getElementById('detailsTitle').textContent=r.customerName;document.getElementById('detailsSub').textContent=`${r.category} • Register SR No. ${r.srNo}`;
+    document.getElementById('detailsStatus').innerHTML=`Section: <strong>${r.category}</strong> • Current Stage: <strong>${stages[r.status].label}</strong> • Since ${formatDate(stageSince(r),true)} • ${daysSince(stageSince(r))} दिवस`;
     const history=[...(r.history||[])].reverse();document.getElementById('historyTimeline').innerHTML=history.map(h=>`<div class="timeline-item"><strong>${h.from?esc(stages[h.from]?.label||h.from)+' → ':''}${esc(stages[h.to]?.label||h.to)}</strong><p>${formatDate(h.at,true)}${h.note?' • '+esc(h.note):''}</p></div>`).join('');document.getElementById('undoDetailsBtn').style.display=canUndo(r)?'inline-flex':'none';openModal('detailsModal');
   };
   window.editCurrentFile=()=>{const id=selectedId;closeModal('detailsModal');editFile(id)};
-  window.editFile=(id)=>{const r=getRecord(id);if(!r)return;selectedId=id;document.getElementById('editSrNo').value=r.srNo;document.getElementById('editName').value=r.customerName;openModal('editModal')};
+  window.editFile=(id)=>{const r=getRecord(id);if(!r)return;selectedId=id;document.getElementById('editCategory').value=r.category;document.getElementById('editSrNo').value=r.srNo;document.getElementById('editName').value=r.customerName;openModal('editModal')};
   window.saveEdit=(event)=>{
-    event.preventDefault();const r=getRecord(selectedId);if(!r)return;const sr=normalizeSr(document.getElementById('editSrNo').value),name=document.getElementById('editName').value.trim().replace(/\s+/g,' ');
-    if(records.some(x=>x.id!==r.id&&!x.archivedAt&&normalizeSr(x.srNo)===sr)){toast('हा Register SR No. दुसऱ्या फाईलमध्ये आहे.');return}
-    r.srNo=sr;r.customerName=name;r.updatedAt=nowISO();persist();closeModal('editModal');renderAll();toast('File details अपडेट झाले.');
+    event.preventDefault();const r=getRecord(selectedId);if(!r)return;const category=document.getElementById('editCategory').value,sr=normalizeSr(document.getElementById('editSrNo').value),name=document.getElementById('editName').value.trim().replace(/\s+/g,' ');
+    if(!categories[category])return;
+    if(records.some(x=>x.id!==r.id&&!x.archivedAt&&x.category===category&&normalizeSr(x.srNo)===sr)){toast(`${category} मध्ये हा Register SR No. दुसऱ्या फाईलमध्ये आहे.`);return}
+    Object.assign(r,normalizeWorkflowRecord({...r,category,srNo:sr,customerName:name,updatedAt:nowISO()}));persist();closeModal('editModal');renderAll();toast('File details अपडेट झाले.');
   };
   window.archiveCurrentFile=()=>{
     const r=getRecord(selectedId);if(!r)return;if(!confirm(`${r.customerName} ही फाईल Archive करायची? ती नंतर Restore करता येईल.`))return;
@@ -751,7 +894,7 @@
   window.showAttentionFiles=()=>{switchTab('files');document.getElementById('statusFilter').value='ATTENTION';renderFiles()};
   window.clearFilters=()=>{document.getElementById('searchInput').value='';document.getElementById('statusFilter').value='ALL';document.getElementById('sortFilter').value='updatedDesc';renderFiles()};
   window.openSettings=()=>{
-    document.getElementById('settingUnit').value=settings.unitName;document.getElementById('settingOfficer').value=settings.officerName;document.getElementById('settingDays').value=settings.attentionDays;document.getElementById('settingDbUrl').value=settings.databaseURL||'';openModal('settingsModal');
+    document.getElementById('settingUnit').value=settings.unitName;document.getElementById('settingOfficer').value=settings.officerName;document.getElementById('settingDays').value=settings.attentionDays;document.getElementById('settingSound').checked=settings.soundEnabled!==false;document.getElementById('settingDbUrl').value=settings.databaseURL||'';openModal('settingsModal');
     if(window.__DS_FIREBASE__)updateFirebaseStatus(window.__DS_FIREBASE__);
   };
   window.saveSettings=(event)=>{
@@ -759,7 +902,7 @@
     const databaseURL=document.getElementById('settingDbUrl').value.trim().replace(/\/+$/,'');
     const validURL=!databaseURL||/^https:\/\/[a-z0-9.-]+(?:firebaseio\.com|firebasedatabase\.app)$/i.test(databaseURL);
     if(!validURL){toast('Realtime Database चा पूर्ण आणि अचूक URL टाका.');document.getElementById('settingDbUrl').focus();return}
-    settings.unitName=document.getElementById('settingUnit').value.trim()||defaultSettings.unitName;settings.officerName=document.getElementById('settingOfficer').value.trim();settings.attentionDays=Math.min(90,Math.max(1,Number(document.getElementById('settingDays').value)||7));settings.databaseURL=databaseURL;
+    settings.unitName=document.getElementById('settingUnit').value.trim()||defaultSettings.unitName;settings.officerName=document.getElementById('settingOfficer').value.trim();settings.attentionDays=Math.min(90,Math.max(1,Number(document.getElementById('settingDays').value)||7));settings.soundEnabled=document.getElementById('settingSound').checked;settings.databaseURL=databaseURL;
     persist(false);closeModal('settingsModal');renderAll();
     if(window.DSCloud)window.DSCloud.connect(databaseURL);
     toast(databaseURL?'Settings सेव्ह झाले; Cloud Sync जोडत आहे.':'Settings सेव्ह झाले; Local Mode सुरू आहे.');
@@ -769,44 +912,48 @@
   };
   window.importBackup=(event)=>{
     const file=event.target.files?.[0];event.target.value='';if(!file)return;const reader=new FileReader();reader.onload=()=>{
-      try{const data=JSON.parse(reader.result);if(!Array.isArray(data.records))throw new Error('invalid');if(!confirm(`Backup मध्ये ${data.records.length} नोंदी आहेत. सध्याचा data बदलून हा Backup Import करायचा?`))return;records=data.records;settings=Object.assign({},defaultSettings,data.settings||{});persist();renderAll();toast('Backup यशस्वीरीत्या Import झाला.')}catch(e){toast('ही योग्य DS File Backup फाईल नाही.')}
+      try{const data=JSON.parse(reader.result);if(!Array.isArray(data.records))throw new Error('invalid');if(!confirm(`Backup मध्ये ${data.records.length} नोंदी आहेत. सध्याचा data बदलून हा Backup Import करायचा?`))return;records=data.records.map(normalizeWorkflowRecord);settings=Object.assign({},defaultSettings,data.settings||{});persist();renderAll();toast('Backup यशस्वीरीत्या Import झाला.')}catch(e){toast('ही योग्य DS File Backup फाईल नाही.')}
     };reader.readAsText(file);
   };
   window.exportCSV=()=>{
-    const headers=['Register SR No','Customer Name','Current Stage','Stage Since','Waiting Days','Added On','Last Note'];
-    const rows=activeRecords().map(r=>[r.srNo,r.customerName,stages[r.status].label,formatDate(stageSince(r),true),daysSince(stageSince(r)),formatDate(r.createdAt,true),(r.history||[]).at(-1)?.note||'']);
-    const csv='\ufeff'+[headers,...rows].map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');downloadBlob(csv,`DS_File_Report_${dateStamp()}.csv`,'text/csv;charset=utf-8');toast('CSV download झाला.');
+    const headers=['Section','Register SR No','Customer Name','Current Stage','Stage Since','Waiting Days','Added On','Last Note'];
+    const rows=activeRecords().map(r=>[r.category,r.srNo,r.customerName,stages[r.status].label,formatDate(stageSince(r),true),daysSince(stageSince(r)),formatDate(r.createdAt,true),(r.history||[]).at(-1)?.note||'']);
+    const csv='\ufeff'+[headers,...rows].map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');downloadBlob(csv,`DS_${currentCategory}_File_Report_${dateStamp()}.csv`,'text/csv;charset=utf-8');toast(`${categoryLabel()} CSV download झाला.`);
   };
   function buildWhatsAppReport(detailed=false){
-    const all=activeRecords();const branch=all.filter(r=>r.status==='BRANCH');const amcc=all.filter(r=>r.status==='AMCC');const sanctioned=all.filter(r=>r.status==='SANCTIONED');const rejected=all.filter(r=>r.status==='REJECTED');const disbursed=all.filter(r=>r.status==='DISBURSED');const pending=[...branch,...amcc,...sanctioned];const attention=pending.filter(needsAttention);
+    const all=activeRecords();const branch=all.filter(r=>r.status==='BRANCH');const pendingStage=all.filter(r=>r.status==='PENDING');const amcc=all.filter(r=>r.status==='AMCC');const sanctioned=all.filter(r=>r.status==='SANCTIONED');const rejected=all.filter(r=>r.status==='REJECTED');const disbursed=all.filter(r=>r.status==='DISBURSED');const pending=all.filter(isPending);const attention=pending.filter(needsAttention);
     const reportTime=new Intl.DateTimeFormat('en-IN',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}).format(new Date());
     const lines=[
       '📊 *FILE FLOW POSITION REPORT*',
       `🏦 *${settings.unitName}*`,
+      `📁 Section: *${categoryLabel()}*`,
       `📅 ${reportTime}`,
       '',
       '📌 *SUMMARY*',
       `▪️ Total Active Files: *${all.length}*`,
-      `⏳ Total Pending: *${pending.length}*`,
-      `🏢 BRANCH Pending: *${branch.length}*`,
-      `📂 AMCC Pending: *${amcc.length}*`,
-      `✅ SANCTION – Disbursement Pending: *${sanctioned.length}*`,
-      `❌ REJECT: *${rejected.length}*`,
-      `💰 DISBURSED: *${disbursed.length}*`,
-      `⚠️ ${settings.attentionDays}+ Days Attention: *${attention.length}*`
+      `⏳ Total Pending: *${pending.length}*`
     ];
+    if(currentCategory==='SHG')lines.push(`🏢 BRANCH: *${branch.length}*`,`⏳ PENDING: *${pendingStage.length}*`,`✅ SANCTION: *${sanctioned.length}*`,`❌ REJECT: *${rejected.length}*`);
+    else if(currentCategory==='ALL')lines.push(`🏢 BRANCH: *${branch.length}*`,`⏳ SHG PENDING: *${pendingStage.length}*`,`📂 AMCC: *${amcc.length}*`,`✅ SANCTION: *${sanctioned.length}*`,`❌ REJECT: *${rejected.length}*`,`💰 DISBURSED: *${disbursed.length}*`);
+    else lines.push(`🏢 BRANCH Pending: *${branch.length}*`,`📂 AMCC Pending: *${amcc.length}*`,`✅ SANCTION – Disbursement Pending: *${sanctioned.length}*`,`❌ REJECT: *${rejected.length}*`,`💰 DISBURSED: *${disbursed.length}*`);
+    lines.push(`⚠️ ${settings.attentionDays}+ Days Attention: *${attention.length}*`);
     if(detailed){
       lines.push('','📋 *PENDING FILE DETAILS*');
-      const groups=[[`BRANCH PENDING`,branch],[`AMCC PENDING`,amcc],[`SANCTION – DISBURSEMENT PENDING`,sanctioned]];
+      const sanctionPending=sanctioned.filter(isPending);
+      const groups=currentCategory==='SHG'?
+        [[`BRANCH PENDING`,branch],[`PENDING`,pendingStage]]:
+        currentCategory==='ALL'?
+          [[`BRANCH PENDING`,branch],[`SHG PENDING`,pendingStage],[`AMCC PENDING`,amcc],[`SANCTION – DISBURSEMENT PENDING`,sanctionPending]]:
+          [[`BRANCH PENDING`,branch],[`AMCC PENDING`,amcc],[`SANCTION – DISBURSEMENT PENDING`,sanctionPending]];
       groups.forEach(([title,list])=>{
         lines.push('',`*${title} (${list.length})*`);
         if(!list.length){lines.push('— Nil —');return}
         list.sort((a,b)=>daysSince(stageSince(b))-daysSince(stageSince(a))).forEach((record,index)=>{
-          const alert=needsAttention(record)?' ⚠️':'';lines.push(`${index+1}. SR ${record.srNo} – ${record.customerName} – ${daysSince(stageSince(record))} दिवस${alert}`);
+          const alert=needsAttention(record)?' ⚠️':'';const section=currentCategory==='ALL'?`[${record.category}] `:'';lines.push(`${index+1}. ${section}SR ${record.srNo} – ${record.customerName} – ${daysSince(stageSince(record))} दिवस${alert}`);
         });
       });
     }
-    lines.push('','_Generated from File Flow Dashboard_');return lines.join('\n');
+    return lines.join('\n');
   }
   window.shareWhatsAppReport=(detailed=false)=>{
     const text=buildWhatsAppReport(detailed);const link=document.createElement('a');link.href='https://wa.me/?text='+encodeURIComponent(text);link.target='_blank';link.rel='noopener noreferrer';document.body.appendChild(link);link.click();link.remove();
@@ -815,25 +962,26 @@
   function dateStamp(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
   function reportSelection(type){
     const all=activeRecords();
-    if(type==='filtered')return {title:'Filtered File Report',items:getFiltered()};
-    if(type==='pending')return {title:'Pending File Report',items:all.filter(isPending)};
-    if(type==='sanctioned')return {title:'Sanction — Disbursement Pending Report',items:all.filter(r=>r.status==='SANCTIONED')};
-    if(type==='rejected')return {title:'Rejected File Report',items:all.filter(r=>r.status==='REJECTED')};
-    if(type==='disbursed')return {title:'Disbursement Report',items:all.filter(r=>r.status==='DISBURSED')};
-    return {title:'Complete File Position Report',items:all};
+    const scope=categoryLabel();
+    if(type==='filtered')return {title:`${scope} — Filtered File Report`,items:getFiltered()};
+    if(type==='pending')return {title:`${scope} — Pending File Report`,items:all.filter(isPending)};
+    if(type==='sanctioned')return {title:['SHG','ALL'].includes(currentCategory)?`${scope} — Sanction Report`:`${scope} — Sanction / Disbursement Pending Report`,items:all.filter(r=>r.status==='SANCTIONED')};
+    if(type==='rejected')return {title:`${scope} — Rejected File Report`,items:all.filter(r=>r.status==='REJECTED')};
+    if(type==='disbursed')return {title:`${scope} — Disbursement Report`,items:all.filter(r=>r.status==='DISBURSED')};
+    return {title:`${scope} — Complete File Position Report`,items:all};
   }
   window.printReport=(type='all')=>{
     const report=reportSelection(type);buildPrintArea(report.title,report.items,false);setTimeout(()=>window.print(),120);
   };
-  window.printCurrentFile=()=>{const r=getRecord(selectedId);if(!r)return;closeModal('detailsModal');buildPrintArea(`Individual File Movement Report`,[r],true);setTimeout(()=>window.print(),120)};
+  window.printCurrentFile=()=>{const r=getRecord(selectedId);if(!r)return;closeModal('detailsModal');buildPrintArea(`${r.category} — Individual File Movement Report`,[r],true);setTimeout(()=>window.print(),120)};
   function buildPrintArea(title,items,withHistory){
-    const all=activeRecords();const summary=Object.keys(stages).map(k=>[stages[k].label,all.filter(r=>r.status===k).length]);
+    const summaryCategory=withHistory&&items[0]?items[0].category:currentCategory;const all=summaryCategory==='ALL'?allActiveRecords():allActiveRecords().filter(r=>r.category===summaryCategory);const summary=stageKeysForCategory(summaryCategory).map(k=>[stages[k].label,all.filter(r=>r.status===k).length]);
     const rows=items.map((r,i)=>{
       const note=(r.history||[]).at(-1)?.note||'—';
       const history=withHistory?`<br><strong>Movement:</strong> ${(r.history||[]).map(h=>`${h.from?stages[h.from]?.label+' → ':''}${stages[h.to]?.label} (${formatDate(h.at,true)})${h.note?' — '+esc(h.note):''}`).join('<br>')}`:'';
-      return `<tr><td>${i+1}</td><td>${esc(r.srNo)}</td><td>${esc(r.customerName)}</td><td>${esc(stages[r.status].label)}</td><td>${formatDate(stageSince(r),true)}</td><td>${daysSince(stageSince(r))}</td><td>${esc(note)}${history}</td></tr>`;
+      return `<tr><td>${i+1}</td><td>${esc(r.category)}</td><td>${esc(r.srNo)}</td><td>${esc(r.customerName)}</td><td>${esc(stages[r.status].label)}</td><td>${formatDate(stageSince(r),true)}</td><td>${daysSince(stageSince(r))}</td><td>${esc(note)}${history}</td></tr>`;
     }).join('');
-    document.getElementById('printArea').innerHTML=`<div class="print-head"><div><h1>${esc(settings.unitName)}</h1><p>DS FILE FLOW DASHBOARD • ${esc(title)}</p></div><div class="print-meta">Generated: ${formatDate(nowISO(),true)}<br>${settings.officerName?'Prepared By: '+esc(settings.officerName):''}</div></div><div class="print-summary">${[['TOTAL',all.length],...summary].map(x=>`<div class="print-stat"><strong>${x[1]}</strong><span>${x[0]}</span></div>`).join('')}</div><h2 class="print-title">${esc(title)} — ${items.length} File(s)</h2>${items.length?`<table class="print-table"><thead><tr><th>#</th><th>SR NO.</th><th>CUSTOMER NAME</th><th>STAGE</th><th>STAGE DATE</th><th>DAYS</th><th>LAST NOTE / HISTORY</th></tr></thead><tbody>${rows}</tbody></table>`:'<div class="print-empty">या रिपोर्टमध्ये कोणतीही फाईल नाही.</div>'}<div class="print-foot"><span>Computer-generated file position report.</span><span>Page report • ${esc(settings.unitName)}</span></div>`;
+    document.getElementById('printArea').innerHTML=`<div class="print-head"><div><h1>${esc(settings.unitName)}</h1><p>DS FILE FLOW DASHBOARD • ${esc(title)}</p></div><div class="print-meta">Generated: ${formatDate(nowISO(),true)}<br>${settings.officerName?'Prepared By: '+esc(settings.officerName):''}</div></div><div class="print-summary">${[['TOTAL',all.length],...summary].map(x=>`<div class="print-stat"><strong>${x[1]}</strong><span>${x[0]}</span></div>`).join('')}</div><h2 class="print-title">${esc(title)} — ${items.length} File(s)</h2>${items.length?`<table class="print-table"><thead><tr><th>#</th><th>SECTION</th><th>SR NO.</th><th>CUSTOMER NAME</th><th>STAGE</th><th>STAGE DATE</th><th>DAYS</th><th>LAST NOTE / HISTORY</th></tr></thead><tbody>${rows}</tbody></table>`:'<div class="print-empty">या रिपोर्टमध्ये कोणतीही फाईल नाही.</div>'}<div class="print-foot"><span>Computer-generated file position report.</span><span>Page report • ${esc(settings.unitName)}</span></div>`;
   }
   function safeISO(value,fallback){
     const time=Date.parse(value);return Number.isFinite(time)&&time<=Date.now()+86400000?new Date(time).toISOString():fallback;
@@ -842,7 +990,7 @@
     const source=Array.isArray(input)?input:Object.values(input&&typeof input==='object'?input:{});
     return source.filter(Boolean).slice(0,5000).map(raw=>{
       if(!raw||typeof raw!=='object')return null;
-      const id=typeof raw.id==='string'?raw.id.slice(0,100):'';const srNo=typeof raw.srNo==='string'?raw.srNo.trim().slice(0,40):'';const customerName=typeof raw.customerName==='string'?raw.customerName.trim().slice(0,100):'';
+      const id=typeof raw.id==='string'?raw.id.slice(0,100):'';const category=categories[raw.category]?raw.category:'KCC';const srNo=typeof raw.srNo==='string'?raw.srNo.trim().slice(0,40):'';const customerName=typeof raw.customerName==='string'?raw.customerName.trim().slice(0,100):'';
       if(!id||!srNo||!customerName||!stages[raw.status])return null;
       const createdAt=safeISO(raw.createdAt,nowISO());const updatedAt=safeISO(raw.updatedAt,createdAt);const archivedAt=raw.archivedAt?safeISO(raw.archivedAt,null):null;
       const rawHistory=Array.isArray(raw.history)?raw.history:Object.values(raw.history&&typeof raw.history==='object'?raw.history:{});
@@ -851,11 +999,11 @@
         return {from:stages[item.from]?item.from:null,to:item.to,at:safeISO(item.at,updatedAt),note:typeof item.note==='string'?item.note.slice(0,300):''};
       }).filter(Boolean);
       if(!history.length)history.push({from:null,to:raw.status,at:updatedAt,note:'Cloud record'});
-      return {id,srNo,customerName,status:raw.status,createdAt,updatedAt,archivedAt,history};
+      return normalizeWorkflowRecord({id,category,srNo,customerName,status:raw.status,createdAt,updatedAt,archivedAt,history});
     }).filter(Boolean);
   }
   function canonicalRecords(list){
-    return [...list].sort((a,b)=>String(a.id).localeCompare(String(b.id))).map(r=>({id:r.id,srNo:r.srNo,customerName:r.customerName,status:r.status,createdAt:r.createdAt,updatedAt:r.updatedAt,archivedAt:r.archivedAt||null,history:r.history||[]}));
+    return [...list].sort((a,b)=>String(a.id).localeCompare(String(b.id))).map(r=>({id:r.id,category:categories[r.category]?r.category:'KCC',srNo:r.srNo,customerName:r.customerName,status:r.status,createdAt:r.createdAt,updatedAt:r.updatedAt,archivedAt:r.archivedAt||null,history:r.history||[]}));
   }
   function recordSignature(list){return JSON.stringify(canonicalRecords(list))}
   function applyCloudData(payload){
@@ -881,7 +1029,7 @@
   window.addEventListener('ds-firebase-status',e=>updateFirebaseStatus(e.detail));
   window.addEventListener('ds-cloud-empty',()=>{if(settings.databaseURL)persist(true)});
   window.addEventListener('ds-cloud-data',e=>applyCloudData(e.detail));
-  window.addEventListener('storage',e=>{if([STORE_KEY,SETTINGS_KEY].includes(e.key)){records=loadJSON(STORE_KEY,[]);settings=Object.assign({},defaultSettings,loadJSON(SETTINGS_KEY,{}));renderAll()}});
+  window.addEventListener('storage',e=>{if([STORE_KEY,SETTINGS_KEY,CATEGORY_KEY].includes(e.key)){records=loadJSON(STORE_KEY,[]);records=Array.isArray(records)?records.map(normalizeWorkflowRecord):[];settings=Object.assign({},defaultSettings,loadJSON(SETTINGS_KEY,{}));currentCategory=localStorage.getItem(CATEGORY_KEY)||'KCC';if(currentCategory!=='ALL'&&!categories[currentCategory])currentCategory='KCC';renderAll()}});
   tickClock();setInterval(tickClock,1000);renderAll();if(window.__DS_FIREBASE__&&!window.__DS_FIREBASE__.loading)updateFirebaseStatus(window.__DS_FIREBASE__);
 })();
 </script>
